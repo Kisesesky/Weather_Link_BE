@@ -64,6 +64,11 @@ src/
 │   │   ├── dto/
 │   │   └── entities/
 │
+│   ├── chat/                    # 채팅, 채팅룸, 메세지
+│   │   ├── dto/
+│   │   ├── service/
+│   │   └── entities/
+|
 │   ├── weather/                 # 날씨 수집, 저장, 조회
 │   │   ├── dto/
 │   │   └── entities/
