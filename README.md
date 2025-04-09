@@ -31,6 +31,7 @@
 ---
 
 ## 📁 폴더 구조
+```
 src/
 ├── common/                      # 전역에서 재사용 가능한 공통 코드
 │   ├── decorators/              # 커스텀 데코레이터 모음 (예: @Public, @Roles 등)
@@ -84,7 +85,7 @@ src/
 ├── app.module.ts                # 앱 최상단 모듈
 ├── ormconfig.ts                 # TypeORM 설정 파일 (고려 중)
 └── main.ts                      # 앱 실행 진입점
-
+```
 
 
 
