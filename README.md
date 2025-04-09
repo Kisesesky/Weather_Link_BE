@@ -35,51 +35,56 @@ src/
 ├── common/                      # 전역에서 재사용 가능한 공통 코드
 │   ├── decorators/              # 커스텀 데코레이터 모음 (예: @Public, @Roles 등)
 │   ├── dto/                     # 공통 DTO (예: Pagination DTO)
-│   └── entities/                
+│   └── entities/
 │       └── base.entity.ts       # 모든 엔티티에서 상속받는 기본 필드 정의
-│
+
 ├── config/                      # 환경설정 모듈
 │   ├── app/                     # App 설정 (PORT, HOST 등)
 │   ├── aws/                     # S3 등 AWS 관련 설정
 │   ├── db/                      # DB 연결 및 TypeORM 설정
-│   └── social/                  # Google, Kakao 등의 OAuth 관련 설정
-│
+│   └── social/                  # Google, Kakao 등의 OAuth 설정
+
 ├── database/
 │   └── migrations/              # 마이그레이션 파일 모음
-│
+
 ├── modules/                     # 주요 도메인 모듈들
-│   │
 │   ├── auth/                    # 로그인, OAuth, JWT, 가드 등 인증 관련
-│   │   ├── dto/                 
-│   │   ├── entities/            
-│   │   ├── guards/              # 인증/인가 처리용 가드
-│   │   └── strategies/          # OAuth, JWT 전략 처리
-│   │
-│   ├── friends/                 # 친구 요청/수락/거절, 친구 목록
 │   │   ├── dto/
-│   │   └── entities/
-│   │
-│   ├── locations/               # 사용자 위치 저장, 조회, 즐겨찾기 관리
-│   │   ├── dto/
-│   │   └── entities/
-│   │
+│   │   ├── entities/
+│   │   ├── guards/
+│   │   └── strategies/
+│
 │   ├── users/                   # 사용자 정보, 위치, 설정 등
 │   │   ├── dto/
 │   │   ├── entities/
-│   │   └── subscribers/         # 사용자 이벤트 구독 처리 (예: 로그인 로그 생성)
-│   │
+│   │   └── subscribers/         # 사용자 이벤트 구독 처리
+│
+│   ├── locations/               # 위치 저장, 조회, 즐겨찾기
+│   │   ├── dto/
+│   │   └── entities/
+│
 │   ├── weather/                 # 날씨 수집, 저장, 조회
 │   │   ├── dto/
 │   │   └── entities/
-│   │
-│   └── s3/                      # 이미지 업로드 등 S3 연동 처리
+│
+│   ├── alerts/                  # 임계값 알림, 사용자 알림 설정
+│   │   ├── dto/
+│   │   └── entities/
+│
+│   ├── friends/                 # 친구 요청/수락/거절, 친구 목록
+│   │   ├── dto/
+│   │   └── entities/
+│
+│   └── s3/                      # S3 이미지 업로드 등
 │       ├── dto/
 │       └── entities/
-│
+
 ├── utils/                       # 유틸 함수 모음
-├── app.module.ts                # 앱 진입점 연결
-├── ormconfig.ts                 # 고려중
-└── main.ts                      # 앱 진입점
+
+├── app.module.ts                # 앱 최상단 모듈
+├── ormconfig.ts                 # TypeORM 설정 파일 (고려 중)
+└── main.ts                      # 앱 실행 진입점
+
 
 
 
