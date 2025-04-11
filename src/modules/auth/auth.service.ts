@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ResponseSignUpDto } from './dto/response-sign-up.dto';
@@ -7,6 +7,7 @@ import { comparePassword } from 'src/utils/password-util';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfigService } from 'src/config/app/config.service';
 import { CookieOptions } from 'express';
+import { EmailService } from './email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -14,9 +15,15 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private appConfigService: AppConfigService,
+    private emailService: EmailService
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+    // 이메일 인증 확인
+    const isVerified = await this.emailService.isEmailVerified(signUpDto.email);
+    if (!isVerified) {
+      throw new UnauthorizedException('이메일 인증이 필요합니다.');
+    }
     return this.usersService.createUser(signUpDto);
   }
 
@@ -101,5 +108,14 @@ export class AuthService {
       accessOptions: this.setCookieOption(0, requestDomain),
       refreshOptions: this.setCookieOption(0, requestDomain),
     };
+  }
+
+  //email code
+  async sendCode(email: string) {
+    await this.emailService.sendVerificationCode(email)
+  }
+
+  verifyCode(email: string, code: string) {
+    return this.emailService.verifyCode(email, code)
   }
 }
