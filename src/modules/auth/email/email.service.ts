@@ -5,7 +5,8 @@ import * as nodemailer from 'nodemailer';
 export class EmailService {
   private transporter: any;
   private verifiedEmails: Map<string, boolean> = new Map();
-  private verificationCodes: Map<string, { code: string; expiresAt: number }> = new Map();
+  private verificationCodes: Map<string, { code: string; expiresAt: number }> =
+    new Map();
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -19,10 +20,9 @@ export class EmailService {
 
   async sendVerificationCode(to: string) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('인증 코드:', code);
     this.verificationCodes.set(to, { code, expiresAt: Date.now() + 600000 });
-    setTimeout(()=>
-      this.verificationCodes.delete(to)
-    , 600000) //1분
+    setTimeout(() => this.verificationCodes.delete(to), 600000); //1분
     const html = `
         <div style="max-width: 520px; margin: 40px auto; padding: 40px 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff;">
         <h2 style="font-size: 20px; font-weight: 600; color: #222; margin-bottom: 24px;">
@@ -67,16 +67,19 @@ export class EmailService {
   // 기존 코드 검증 로직
   verifyCode(email: string, code: string): boolean {
     const storedCode = this.verificationCodes.get(email);
-    if (!storedCode || storedCode.code !== code || Date.now() > storedCode.expiresAt) {
+    if (
+      !storedCode ||
+      storedCode.code !== code ||
+      Date.now() > storedCode.expiresAt
+    ) {
       return false;
     }
-    if(storedCode.code === code) {
+    if (storedCode.code === code) {
       this.verifiedEmails.set(email, true);
       return true;
     }
 
     return false;
-   
   }
 
   async isEmailVerified(email: string): Promise<boolean> {

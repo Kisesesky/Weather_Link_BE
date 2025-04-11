@@ -10,6 +10,9 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.startegy';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { KakaoStrategy } from './strategies/kakao.strategy';
+import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 
 @Module({
@@ -29,6 +32,13 @@ import { EmailService } from './email/email.service';
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, EmailService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    KakaoStrategy,
+    NaverStrategy,
+    EmailService,
+  ],
 })
 export class AuthModule {}

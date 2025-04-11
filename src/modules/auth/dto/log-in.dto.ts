@@ -5,7 +5,6 @@ export class LogInDto {
   @ApiProperty({
     type: String,
     description: '이메일',
-    example: 'test@test.com',
   })
   @IsEmail()
   email: string;
@@ -13,7 +12,6 @@ export class LogInDto {
   @ApiProperty({
     type: String,
     description: '비밀번호',
-    example: 'Password123!',
   })
   @IsString()
   password: string;

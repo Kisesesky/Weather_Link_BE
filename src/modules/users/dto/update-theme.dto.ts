@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEnum } from 'class-validator';
+import { Theme } from '../entities/user.entity';
 
 export class UpdateThemeDto {
   @ApiProperty({
-    type: String,
+    enum: Theme,
     description: '테마 설정 (light 또는 dark)',
-    example: 'light',
+    example: Theme.LIGHT,
   })
-  @IsString()
-  theme: string;
-}
+  @IsEnum(Theme, { message: '테마는 light 또는 dark만 선택 가능합니다.' })
+  theme: Theme;
+} 

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ResponseSignUpDto } from './dto/response-sign-up.dto';
@@ -15,10 +19,16 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private appConfigService: AppConfigService,
-    private emailService: EmailService
+    private emailService: EmailService,
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+    const isNameAvailable = await this.usersService.isNameAvailable(
+      signUpDto.name,
+    );
+    if (!isNameAvailable)
+      throw new BadRequestException('이미 사용 중인 닉네임입니다.');
+
     // 이메일 인증 확인
     const isVerified = await this.emailService.isEmailVerified(signUpDto.email);
     if (!isVerified) {
@@ -35,6 +45,27 @@ export class AuthService {
         '이메일 또는 패스워드가 잘못 되었습니다.',
       );
     return this.makeJwtToken(logInDto.email, origin);
+  }
+
+  googleLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  kakaoLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  naverLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  logout(origin: string) {
+    const cookieOptions = this.setCookieOption(0, origin);
+
+    return {
+      accessOptions: cookieOptions,
+      refreshOptions: cookieOptions,
+    };
   }
 
   makeJwtToken(email: string, origin: string) {
@@ -112,10 +143,10 @@ export class AuthService {
 
   //email code
   async sendCode(email: string) {
-    await this.emailService.sendVerificationCode(email)
+    await this.emailService.sendVerificationCode(email);
   }
 
   verifyCode(email: string, code: string) {
-    return this.emailService.verifyCode(email, code)
+    return this.emailService.verifyCode(email, code);
   }
 }

@@ -1,4 +1,11 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
   ApiTags,
@@ -9,7 +16,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { User } from './entities/user.entity';
-import { UpdateThemeDto } from './dto/update-theme.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('사용자')
 @ApiBearerAuth()
@@ -25,13 +32,21 @@ export class UsersController {
     return user;
   }
 
-  @Patch('theme')
-  @ApiOperation({ summary: '테마 설정 변경' })
-  @ApiResponse({ status: 200, description: '테마 설정 변경 성공', type: User })
-  async updateTheme(
+  @Patch('me')
+  @ApiOperation({ summary: '회원 정보 수정' })
+  @ApiResponse({ status: 200, description: '회원 정보 수정 성공', type: User })
+  async updateUser(
     @RequestUser() user: User,
-    @Body() updateThemeDto: UpdateThemeDto,
+    @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.updateTheme(user.id, updateThemeDto.theme);
+    return this.usersService.updateUser(user.id, updateUserDto);
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiResponse({ status: 200, description: '회원 탈퇴 성공' })
+  async deleteAccount(@RequestUser() user: User) {
+    await this.usersService.deleteUser(user.id);
+    return { message: '회원 탈퇴가 완료되었습니다.' };
   }
 }
