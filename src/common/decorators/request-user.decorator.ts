@@ -1,10 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
-export const RequestOrigin = createParamDecorator(
+export const RequestUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.headers['origin']
-      ? request.headers['origin']
-      : request.hostname;
+    return request.user;
   },
 );
