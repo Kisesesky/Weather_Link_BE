@@ -14,7 +14,6 @@ export class SignUpDto {
   @ApiProperty({
     type: String,
     description: '이메일',
-    example: 'test@test.com',
   })
   @IsEmail()
   @IsOptional()
@@ -23,7 +22,6 @@ export class SignUpDto {
   @ApiProperty({
     type: String,
     description: '비밀번호',
-    example: 'Password123!',
   })
   @IsStrongPassword({
     minLength: 8,
@@ -42,7 +40,7 @@ export class SignUpDto {
   @IsString()
   location?: string;
 
-  @ApiProperty({ type: String, description: '이름', example: 'test' })
+  @ApiProperty({ type: String, description: '이름' })
   @IsString()
   @MaxLength(8)
   @Matches(/^[가-힣a-zA-Z0-9]+$/)

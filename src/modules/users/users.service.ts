@@ -18,26 +18,11 @@ export class UsersService {
   ) {}
 
   async createUser(signUpDto: SignUpDto) {
-    try {
-      // 이메일 중복 체크
-      const existingUser = await this.userRepository.findOne({
-        where: { email: signUpDto.email },
-      });
-      if (existingUser) {
-        throw new BadRequestException('이미 사용 중인 이메일입니다.');
-      }
+    const user = this.userRepository.create(signUpDto);
+    await this.userRepository.save(user);
 
-      const user = this.userRepository.create(signUpDto);
-      await this.userRepository.save(user);
-
-      const { password, ...rest } = user;
-      return rest;
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException('사용자 생성 중 오류가 발생했습니다.');
-    }
+    const { password, ...rest } = user;
+    return rest;
   }
 
   async isNameAvailable(name: string) {

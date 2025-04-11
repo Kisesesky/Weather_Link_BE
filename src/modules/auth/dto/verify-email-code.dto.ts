@@ -1,18 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
 
-export class LogInDto {
+export class VerifyEmailCodeDto {
   @ApiProperty({
-    type: String,
-    description: '이메일',
+    example: 'test@test.com',
+    description: '이메일 주소',
   })
   @IsEmail()
   email: string;
 
   @ApiProperty({
-    type: String,
-    description: '비밀번호',
+    example: '123456',
+    description: '인증 코드',
   })
   @IsString()
-  password: string;
+  code: string;
 }

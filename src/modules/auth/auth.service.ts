@@ -11,6 +11,7 @@ import { comparePassword } from 'src/utils/password-util';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfigService } from 'src/config/app/config.service';
 import { CookieOptions } from 'express';
+import { EmailService } from './email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private appConfigService: AppConfigService,
+    private emailService: EmailService,
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
@@ -27,6 +29,11 @@ export class AuthService {
     if (!isNameAvailable)
       throw new BadRequestException('이미 사용 중인 닉네임입니다.');
 
+    // 이메일 인증 확인
+    const isVerified = await this.emailService.isEmailVerified(signUpDto.email);
+    if (!isVerified) {
+      throw new UnauthorizedException('이메일 인증이 필요합니다.');
+    }
     return this.usersService.createUser(signUpDto);
   }
 
@@ -132,5 +139,14 @@ export class AuthService {
       accessOptions: this.setCookieOption(0, requestDomain),
       refreshOptions: this.setCookieOption(0, requestDomain),
     };
+  }
+
+  //email code
+  async sendCode(email: string) {
+    await this.emailService.sendVerificationCode(email);
+  }
+
+  verifyCode(email: string, code: string) {
+    return this.emailService.verifyCode(email, code);
   }
 }
