@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsString,
   IsStrongPassword,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
 
@@ -42,6 +44,8 @@ export class SignUpDto {
 
   @ApiProperty({ type: String, description: '이름', example: 'test' })
   @IsString()
+  @MaxLength(8)
+  @Matches(/^[가-힣a-zA-Z0-9]+$/)
   name: string;
 
   @IsString()

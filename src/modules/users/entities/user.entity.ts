@@ -3,10 +3,15 @@ import { BaseEntity } from 'src/common/entities/base.entity';
 import { LoginLog } from 'src/modules/auth/entities/login-log.entity';
 
 export enum RegisterType {
-  COMMON = 'common',
-  GOOGLE = 'google',
-  KAKAO = 'kakao',
-  NAVER = 'naver',
+  EMAIL = 'EMAIL',
+  GOOGLE = 'GOOGLE',
+  KAKAO = 'KAKAO',
+  NAVER = 'NAVER',
+}
+
+export enum Theme {
+  LIGHT = 'light',
+  DARK = 'dark',
 }
 
 @Entity('users')
@@ -14,7 +19,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, unique: true })
   name: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -24,7 +29,7 @@ export class User extends BaseEntity {
     name: 'register_type',
     type: 'enum',
     enum: RegisterType,
-    default: RegisterType.COMMON,
+    default: RegisterType.EMAIL,
   })
   registerType: RegisterType;
 
@@ -37,8 +42,13 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location: string;
 
-  @Column({ type: 'varchar', length: 20, default: 'light' })
-  theme: string;
+  @Column({
+    type: 'enum',
+    enum: Theme,
+    default: Theme.LIGHT,
+    comment: '사용자 테마 설정 (light 또는 dark)',
+  })
+  theme: Theme;
 
   @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
   lastLoginAt: Date;

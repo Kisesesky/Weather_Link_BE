@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ResponseSignUpDto } from './dto/response-sign-up.dto';
@@ -17,6 +21,12 @@ export class AuthService {
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+    const isNameAvailable = await this.usersService.isNameAvailable(
+      signUpDto.name,
+    );
+    if (!isNameAvailable)
+      throw new BadRequestException('이미 사용 중인 닉네임입니다.');
+
     return this.usersService.createUser(signUpDto);
   }
 
@@ -28,6 +38,27 @@ export class AuthService {
         '이메일 또는 패스워드가 잘못 되었습니다.',
       );
     return this.makeJwtToken(logInDto.email, origin);
+  }
+
+  googleLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  kakaoLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  naverLogin(email: string, origin: string) {
+    return this.makeJwtToken(email, origin);
+  }
+
+  logout(origin: string) {
+    const cookieOptions = this.setCookieOption(0, origin);
+
+    return {
+      accessOptions: cookieOptions,
+      refreshOptions: cookieOptions,
+    };
   }
 
   makeJwtToken(email: string, origin: string) {

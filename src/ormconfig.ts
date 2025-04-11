@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { DbConfigService } from 'src/config/db/config.service';
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-import { UserSubscriber } from './modules/users/subscribers/users.subscribe';
+import { UserSubscriber } from './modules/users/subscribers/users.subscriber';
 
 const entity = join(__dirname, '/**/*.entity{.ts,.js}');
 const migration = join(__dirname, './database/migrations/**/*{.ts,.js}');
