@@ -1,26 +1,43 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { RegisterType, User } from './entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { SignUpDto } from '../auth/dto/sign-up.dto';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  async createUser(signUpDto: SignUpDto) {
+    const user = this.userRepository.create(signUpDto);
+    await this.userRepository.save(user);
+
+    const { password, ...rest } = user;
+    return rest;
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findUserByEmail(email: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user)
+      throw new UnauthorizedException(
+        '이메일 또는 패스워드가 잘못 되었습니다.',
+      );
+    return user;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
+  async updateTheme(userId: string, theme: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+    user.theme = theme;
+    await this.userRepository.save(user);
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    const { password, ...rest } = user;
+    return rest;
   }
 }

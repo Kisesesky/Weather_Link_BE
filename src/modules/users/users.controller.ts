@@ -1,34 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RequestUser } from 'src/common/decorators/request-user.decorator';
+import { User } from './entities/user.entity';
+import { UpdateThemeDto } from './dto/update-theme.dto';
 
+@ApiTags('사용자')
+@ApiBearerAuth()
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Get('myinfo')
+  @ApiOperation({ summary: '내 정보 조회' })
+  @ApiResponse({ status: 200, description: '내 정보 조회 성공', type: User })
+  getMe(@RequestUser() user: User) {
+    return user;
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @Patch('theme')
+  @ApiOperation({ summary: '테마 설정 변경' })
+  @ApiResponse({ status: 200, description: '테마 설정 변경 성공', type: User })
+  async updateTheme(
+    @RequestUser() user: User,
+    @Body() updateThemeDto: UpdateThemeDto,
+  ) {
+    return this.usersService.updateTheme(user.id, updateThemeDto.theme);
   }
 }

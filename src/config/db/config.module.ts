@@ -7,6 +7,7 @@ import { DbConfigService } from './config.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: '.env',
       load: [configuration],
       validationSchema: Joi.object({
         DATABASE_HOST: Joi.string().required(),

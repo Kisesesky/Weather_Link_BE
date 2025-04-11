@@ -1,26 +1,105 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+import { SignUpDto } from './dto/sign-up.dto';
+import { ResponseSignUpDto } from './dto/response-sign-up.dto';
+import { LogInDto } from './dto/log-in.dto';
+import { comparePassword } from 'src/utils/password-util';
+import { JwtService } from '@nestjs/jwt';
+import { AppConfigService } from 'src/config/app/config.service';
+import { CookieOptions } from 'express';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+    private appConfigService: AppConfigService,
+  ) {}
+
+  async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+    return this.usersService.createUser(signUpDto);
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async logIn(logInDto: LogInDto, origin: string) {
+    const user = await this.usersService.findUserByEmail(logInDto.email);
+
+    if (!(await comparePassword(logInDto.password, user.password)))
+      throw new UnauthorizedException(
+        '이메일 또는 패스워드가 잘못 되었습니다.',
+      );
+    return this.makeJwtToken(logInDto.email, origin);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  makeJwtToken(email: string, origin: string) {
+    const { accessToken, accessOptions } = this.setJwtAccessToken(
+      email,
+      origin,
+    );
+
+    const { refreshToken, refreshOptions } = this.setJwtRefreshToken(
+      email,
+      origin,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      accessOptions,
+      refreshOptions,
+    };
   }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+  setJwtAccessToken(email: string, requestDomain: string) {
+    const payload = { sub: email };
+    const maxAge = 3600 * 1000;
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge,
+    });
+    return {
+      accessToken,
+      accessOptions: this.setCookieOption(maxAge, requestDomain),
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  setJwtRefreshToken(email: string, requestDomain: string) {
+    const payload = { sub: email };
+    const maxAge = 30 * 24 * 3600 * 1000;
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge,
+    });
+    return {
+      refreshToken,
+      refreshOptions: this.setCookieOption(maxAge, requestDomain),
+    };
+  }
+
+  setCookieOption(maxAge: number, requestDomain: string): CookieOptions {
+    let domain: string;
+
+    if (
+      requestDomain.includes('127.0.0.1') ||
+      requestDomain.includes('localhost')
+    )
+      domain = 'localhost';
+    else {
+      domain = requestDomain.split(':')[0];
+    }
+
+    return {
+      domain,
+      path: '/',
+      httpOnly: true,
+      maxAge,
+      sameSite: 'lax',
+    };
+  }
+
+  expireJwtToken(requestDomain: string) {
+    return {
+      accessOptions: this.setCookieOption(0, requestDomain),
+      refreshOptions: this.setCookieOption(0, requestDomain),
+    };
   }
 }
