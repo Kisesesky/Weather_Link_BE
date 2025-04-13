@@ -17,13 +17,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('사용자')
 @ApiBearerAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get('myinfo')
   @ApiOperation({ summary: '내 정보 조회' })
