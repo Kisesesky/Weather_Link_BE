@@ -20,10 +20,15 @@ async function bootstrap() {
     .setDescription('Weather Link API description')
     .setVersion('1.0')
     .addBearerAuth()
+    .addServer('api/v1')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
+
+  app.setGlobalPrefix('api/v1',{
+    exclude: ['health']
+  })
 
   await app.listen(process.env.PORT ?? 3000);
 }
