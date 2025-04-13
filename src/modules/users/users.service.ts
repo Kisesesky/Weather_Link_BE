@@ -10,6 +10,8 @@ import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { S3Service } from '../s3/s3.service';
+import { comparePassword, encryptPassword } from 'src/utils/password-util';
+import { validatePassword } from 'src/utils/password-validator';
 
 @Injectable()
 export class UsersService {
@@ -125,5 +127,14 @@ export class UsersService {
     }
 
     await this.userRepository.remove(user);
+  }
+
+  async updatePassword(email: string, hashedPassword: string) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+    user.password = hashedPassword;
+    return this.userRepository.save(user);
   }
 }

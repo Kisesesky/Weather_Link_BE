@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { AuthController } from './controller/auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfigModule } from 'src/config/app/config.module';
 import { SocialConfigModule } from 'src/config/social/config.module';
 import { AppConfigService } from 'src/config/app/config.service';
 import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './strategies/jwt.startegy';
+import { JwtStrategy } from './strategies/jwt.starategy';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -15,6 +15,7 @@ import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
+import { AuthServiceController } from './controller/auth-service.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { S3Module } from '../s3/s3.module';
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthServiceController],
   providers: [
     AuthService,
     JwtStrategy,
@@ -42,5 +43,6 @@ import { S3Module } from '../s3/s3.module';
     NaverStrategy,
     EmailService,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}
