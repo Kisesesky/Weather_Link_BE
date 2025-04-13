@@ -5,13 +5,17 @@ import {
   Delete,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
@@ -32,17 +36,20 @@ export class UsersController {
     return user;
   }
 
-  @Patch('me')
+  @Patch('myinfo')
   @ApiOperation({ summary: '회원 정보 수정' })
   @ApiResponse({ status: 200, description: '회원 정보 수정 성공', type: User })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('profileImage'))
   async updateUser(
     @RequestUser() user: User,
     @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() profileImage?: Express.Multer.File,
   ) {
-    return this.usersService.updateUser(user.id, updateUserDto);
+    return this.usersService.updateUser(user.id, updateUserDto, profileImage);
   }
 
-  @Delete('me')
+  @Delete('myinfo')
   @ApiOperation({ summary: '회원 탈퇴' })
   @ApiResponse({ status: 200, description: '회원 탈퇴 성공' })
   async deleteAccount(@RequestUser() user: User) {

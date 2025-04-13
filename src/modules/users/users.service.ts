@@ -9,18 +9,32 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
+import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private s3Service: S3Service,
   ) {}
 
-  async createUser(signUpDto: SignUpDto) {
-    const user = this.userRepository.create(signUpDto);
-    await this.userRepository.save(user);
+  async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
+    let profileImageUrl;
 
+    if (profileImage) {
+      profileImageUrl = await this.s3Service.uploadImage(
+        profileImage,
+        'profiles',
+      );
+    }
+
+    const user = this.userRepository.create({
+      ...signUpDto,
+      profileImage: profileImageUrl,
+    });
+
+    await this.userRepository.save(user);
     const { password, ...rest } = user;
     return rest;
   }
@@ -45,7 +59,11 @@ export class UsersService {
     });
   }
 
-  async updateUser(userId: string, updateUserDto: UpdateUserDto) {
+  async updateUser(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+    profileImage?: Express.Multer.File,
+  ) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
@@ -59,14 +77,16 @@ export class UsersService {
       }
     }
 
-    // 테마 값 검증
-    if (updateUserDto.theme !== undefined) {
-      if (!Object.values(Theme).includes(updateUserDto.theme)) {
-        throw new BadRequestException(
-          '테마는 light 또는 dark만 선택 가능합니다.',
-        );
-      }
+    // 프로필 이미지 업로드 처리
+    let profileImageUrl;
+
+    if (profileImage) {
+      profileImageUrl = await this.s3Service.uploadImage(
+        profileImage,
+        'profiles',
+      );
     }
+    user.profileImage = profileImageUrl;
 
     // 사용자 정보 업데이트 (이메일 제외)
     Object.assign(user, updateUserDto);

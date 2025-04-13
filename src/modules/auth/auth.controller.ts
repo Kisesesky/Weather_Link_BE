@@ -8,12 +8,20 @@ import {
   BadRequestException,
   UseGuards,
   Get,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LogInDto } from './dto/log-in.dto';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { SignUpDto } from './dto/sign-up.dto';
 import { ResponseSignUpDto } from './dto/response-sign-up.dto';
 import { RequestOrigin } from 'src/common/decorators/request.origin';
@@ -24,6 +32,7 @@ import { KakaoAuthGuard } from './guards/kakao-auth.guard';
 import { NaverAuthGuard } from './guards/naver-auth.guard';
 import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
 import { SendEmailCodeDto } from './dto/send-email-code.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -32,10 +41,15 @@ export class AuthController {
 
   @ApiOperation({ summary: '회원가입' })
   @ApiResponse({ type: ResponseSignUpDto, status: HttpStatus.CREATED })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('profileImage'))
   @ApiBody({ type: SignUpDto })
   @Post('signup')
-  async signUp(@Body() signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
-    return this.authService.signUp(signUpDto);
+  async signUp(
+    @Body() signUpDto: SignUpDto,
+    @UploadedFile() profileImage?: Express.Multer.File,
+  ): Promise<ResponseSignUpDto> {
+    return this.authService.signUp(signUpDto, profileImage);
   }
 
   @ApiOperation({ summary: '로그인' })

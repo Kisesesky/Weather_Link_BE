@@ -23,14 +23,12 @@ export class UpdateUserDto {
   name?: string;
 
   @ApiProperty({
-    type: String,
-    description: '프로필 이미지 URL',
-    example: 'https://example.com/profile.jpg',
-    required: false,
+    type: 'string',
+    format: 'binary',
+    description: '프로필 이미지 파일',
   })
   @IsOptional()
-  @IsString()
-  profileImage?: string;
+  profileImage?: Express.Multer.File;
 
   @ApiProperty({
     type: String,

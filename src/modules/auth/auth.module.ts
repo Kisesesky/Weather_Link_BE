@@ -14,12 +14,14 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
+import { S3Module } from '../s3/s3.module';
 
 @Module({
   imports: [
     AppConfigModule,
     SocialConfigModule,
     UsersModule,
+    S3Module,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [AppConfigModule],

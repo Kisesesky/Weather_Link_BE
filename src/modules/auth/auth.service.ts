@@ -22,7 +22,10 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+  async signUp(
+    signUpDto: SignUpDto,
+    profileImage?: Express.Multer.File,
+  ): Promise<ResponseSignUpDto> {
     const isNameAvailable = await this.usersService.isNameAvailable(
       signUpDto.name,
     );
@@ -34,7 +37,7 @@ export class AuthService {
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
     }
-    return this.usersService.createUser(signUpDto);
+    return this.usersService.createUser(signUpDto, profileImage);
   }
 
   async logIn(logInDto: LogInDto, origin: string) {
