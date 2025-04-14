@@ -16,6 +16,7 @@ import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
 import { AuthServiceController } from './controller/auth-service.controller';
+import { RedisCacheModule } from 'src/config/cache/cache.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuthServiceController } from './controller/auth-service.controller';
     SocialConfigModule,
     UsersModule,
     S3Module,
+    RedisCacheModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [AppConfigModule],
