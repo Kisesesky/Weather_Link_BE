@@ -33,9 +33,13 @@ export class SignUpDto {
   @IsOptional()
   password?: string;
 
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: '프로필 이미지 파일',
+  })
   @IsOptional()
-  @IsString()
-  profileImage?: string;
+  profileImage?: Express.Multer.File;
 
   @IsOptional()
   location?: LocationsEntity;

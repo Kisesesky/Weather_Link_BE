@@ -1,13 +1,22 @@
-import { BadRequestException, Body, Controller, HttpCode, HttpStatus, Patch, Post, UseGuards } from "@nestjs/common";
-import { AuthService } from "../auth.service";
-import { ApiBody, ApiOperation, ApiTags, ApiBearerAuth } from "@nestjs/swagger";
-import { SendEmailCodeDto } from "../dto/send-email-code.dto";
-import { VerifyEmailCodeDto } from "../dto/verify-email-code.dto";
-import { ChangePasswordDto, PasswordDto } from "../dto/password.dto";
-import { RequestUser } from "src/common/decorators/request-user.decorator";
-import { RequestOrigin } from "src/common/decorators/request.origin";
-import { User } from "src/modules/users/entities/user.entity";
-import { JwtAuthGuard } from "../guards/jwt-auth.guard";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthService } from '../auth.service';
+import { ApiBody, ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { SendEmailCodeDto } from '../dto/send-email-code.dto';
+import { VerifyEmailCodeDto } from '../dto/verify-email-code.dto';
+import { ChangePasswordDto, PasswordDto } from '../dto/password.dto';
+import { RequestUser } from 'src/common/decorators/request-user.decorator';
+import { RequestOrigin } from 'src/common/decorators/request.origin';
+import { User } from 'src/modules/users/entities/user.entity';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('유저 서비스')
 @Controller('auth/service')
@@ -87,7 +96,7 @@ export class AuthServiceController {
     );
 
     // 비밀번호 변경 후 새로운 토큰 발급
-    const { accessToken, refreshToken, accessOptions, refreshOptions } = 
+    const { accessToken, refreshToken, accessOptions, refreshOptions } =
       this.authService.makeJwtToken(user.email, origin);
 
     return {
@@ -95,7 +104,7 @@ export class AuthServiceController {
       accessToken,
       refreshToken,
       accessOptions,
-      refreshOptions
+      refreshOptions,
     };
   }
 }

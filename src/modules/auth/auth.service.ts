@@ -24,7 +24,10 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
+  async signUp(
+    signUpDto: SignUpDto,
+    profileImage?: Express.Multer.File,
+  ): Promise<ResponseSignUpDto> {
     const isNameAvailable = await this.usersService.isNameAvailable(
       signUpDto.name,
     );
@@ -36,7 +39,7 @@ export class AuthService {
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
     }
-    return this.usersService.createUser(signUpDto);
+    return this.usersService.createUser(signUpDto, profileImage);
   }
 
   async logIn(logInDto: LogInDto, origin: string) {
@@ -166,11 +169,11 @@ export class AuthService {
 
   // 1-2. 이메일 인증 코드 확인
   async verifyPasswordFindCode(email: string, code: string) {
-    const isVerified = this.emailService.verifyCode(email, code);
+    const isVerified = await this.emailService.verifyCode(email, code);
     if (!isVerified) {
       throw new UnauthorizedException('잘못된 인증 코드입니다.');
     }
-  
+
     return { message: '인증이 완료되었습니다.' };
   }
 
@@ -184,15 +187,15 @@ export class AuthService {
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
     }
-  
+
     if (newPassword !== confirmPassword) {
       throw new BadRequestException('비밀번호가 일치하지 않습니다.');
     }
-  
+
     validatePassword(newPassword);
     const hashedPassword = await encryptPassword(newPassword);
     await this.usersService.updatePassword(email, hashedPassword);
-    
+
     return { message: '비밀번호가 성공적으로 변경되었습니다.' };
   }
 
@@ -203,21 +206,22 @@ export class AuthService {
     confirmPassword: string,
   ) {
     const user = await this.usersService.findUserByEmail(email);
-    const isPasswordValid = await comparePassword(currentPassword, user.password);
+    const isPasswordValid = await comparePassword(
+      currentPassword,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('현재 비밀번호가 일치하지 않습니다.');
     }
-  
+
     if (newPassword !== confirmPassword) {
       throw new BadRequestException('새 비밀번호가 일치하지 않습니다.');
     }
-  
+
     validatePassword(newPassword);
     const hashedPassword = await encryptPassword(newPassword);
     await this.usersService.updatePassword(email, hashedPassword);
-  
+
     return { message: '비밀번호가 성공적으로 변경되었습니다.' };
   }
-  
-  
 }
