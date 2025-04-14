@@ -12,10 +12,14 @@ export class Friend {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.sentRequests)
+  @ManyToOne(() => User, (user) => user.sentRequests, {
+    onDelete: 'CASCADE',
+  })
   sender: User;
 
-  @ManyToOne(() => User, (user) => user.receivedRequests)
+  @ManyToOne(() => User, (user) => user.receivedRequests, {
+    onDelete: 'CASCADE',
+  })
   receiver: User;
 
   @Column({ type: 'varchar', length: 20, default: 'pending' })

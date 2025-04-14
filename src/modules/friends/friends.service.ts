@@ -17,7 +17,7 @@ export class FriendsService {
     private usersService: UsersService,
   ) {}
 
-  // 친구 검색
+  // 유저 검색
   async searchUsers(name: string) {
     return this.usersService.findUserByName(name);
   }
@@ -29,15 +29,31 @@ export class FriendsService {
     const sender = await this.usersService.findUserById(senderId);
     const receiver = await this.usersService.findUserById(receiverId);
 
-    const existing = await this.friendRepository.findOne({
+    // 유저 간 친구 관계 확인
+    const existingRelations = await this.friendRepository.find({
       where: [
-        { sender, receiver },
-        { sender: receiver, receiver: sender },
+        { sender: { id: senderId }, receiver: { id: receiverId } },
+        { sender: { id: receiverId }, receiver: { id: senderId } },
       ],
     });
 
-    if (existing) throw new BadRequestException('이미 친구 요청이 존재합니다.');
+    // 이미 친구인 경우
+    const isAlreadyFriend = existingRelations.some(
+      (relation) => relation.status === 'accepted',
+    );
+    if (isAlreadyFriend) {
+      throw new BadRequestException('이미 친구로 등록된 사용자입니다.');
+    }
 
+    // 진행중인 친구 요청이 있는 경우
+    const isPending = existingRelations.some(
+      (relation) => relation.status === 'pending',
+    );
+    if (isPending) {
+      throw new BadRequestException('이미 친구 요청이 존재합니다.');
+    }
+
+    // 새로운 요청 생성
     const request = this.friendRepository.create({
       sender,
       receiver,
@@ -76,8 +92,8 @@ export class FriendsService {
       relations: ['sender', 'receiver'],
     });
 
-    return accepted.map((f) =>
-      f.sender.id === userId ? f.receiver : f.sender,
+    return accepted.map((friend) =>
+      friend.sender.id === userId ? friend.receiver : friend.sender,
     );
   }
 
@@ -95,5 +111,31 @@ export class FriendsService {
       where: { receiver: { id: userId }, status: 'pending' },
       relations: ['sender'],
     });
+  }
+
+  // 친구 목록 조회
+  async getFriendsList(userId: string) {
+    const friends = await this.friendRepository.find({
+      where: { sender: { id: userId }, status: 'accepted' },
+      relations: ['receiver'],
+    });
+
+    return friends.map((relation) =>
+      relation.sender.id === userId ? relation.receiver : relation.sender,
+    );
+  }
+
+  // 친구 목록에서 특정 친구 삭제
+  async removeFriend(userId: string, friendId: string) {
+    const friend = await this.friendRepository.findOne({
+      where: {
+        sender: { id: userId },
+        receiver: { id: friendId },
+      },
+    });
+
+    if (!friend) throw new NotFoundException('친구를 찾을 수 없습니다.');
+
+    await this.friendRepository.remove(friend);
   }
 }

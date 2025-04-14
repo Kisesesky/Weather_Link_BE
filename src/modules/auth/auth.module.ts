@@ -17,6 +17,7 @@ import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
 import { LoginLogsModule } from '../login-logs/login-logs.module';
+import { RedisCacheModule } from 'src/config/cache/cache.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LoginLogsModule } from '../login-logs/login-logs.module';
     UsersModule,
     S3Module,
     LoginLogsModule,
+    RedisCacheModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [AppConfigModule],

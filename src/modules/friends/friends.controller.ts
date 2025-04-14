@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Req, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  Query,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { FriendsService } from './friends.service';
 import {
   ApiBearerAuth,
@@ -55,16 +64,23 @@ export class FriendsController {
   }
 
   @Get('requests/pending')
-  @ApiOperation({ summary: '내가 받은 친구 요청 목록' })
-  @ApiResponse({ status: 200, description: '수신한 친구 요청 목록 반환' })
+  @ApiOperation({ summary: '내가 보낸 친구 요청 목록' })
+  @ApiResponse({ status: 200, description: '보낸 친구 요청 목록 반환' })
   getPendingRequests(@Req() req) {
     return this.friendsService.getSentRequests(req.user.id);
   }
 
   @Get('requests/received')
-  @ApiOperation({ summary: '내가 보낸 친구 요청 목록' })
-  @ApiResponse({ status: 200, description: '보낸 친구 요청 목록 반환' })
+  @ApiOperation({ summary: '내가 받은 친구 요청 목록' })
+  @ApiResponse({ status: 200, description: '받은 친구 요청 목록 반환' })
   getReceivedRequests(@Req() req) {
     return this.friendsService.getReceivedRequests(req.user.id);
+  }
+
+  @Delete('remove')
+  @ApiOperation({ summary: '친구 삭제' })
+  @ApiResponse({ status: 200, description: '친구 삭제 완료' })
+  removeFriend(@Req() req, @Body() body: { friendId: string }) {
+    return this.friendsService.removeFriend(req.user.id, body.friendId);
   }
 }
