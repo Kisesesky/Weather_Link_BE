@@ -1,1 +1,41 @@
-export class Location {}
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from 'src/modules/users/entities/user.entity';
+
+@Entity()
+export class LocationsEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  kmaRegionCode: string;
+
+  @Column()
+  alertRegionCode: string;
+
+  @Column()
+  stationCode: string;
+
+  @Column()
+  sido: string;
+
+  @Column({ nullable: true })
+  gugun: string;
+
+  @Column({ nullable: true })
+  dong: string;
+
+  @Column({ type: 'int', nullable: true })
+  nx: number;
+
+  @Column({ type: 'int', nullable: true })
+  ny: number;
+
+  @Column({ type: 'float', nullable: true })
+  longitude: number;
+
+  @Column({ type: 'float', nullable: true })
+  latitude: number;
+
+  @OneToMany(()=> User, (user)=> user.location)
+  users: User[]
+}
