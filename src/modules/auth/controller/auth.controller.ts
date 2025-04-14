@@ -84,13 +84,13 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  googleCallback(
+  async googleCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      this.authService.googleLogin(user.email, origin);
+      await this.authService.googleLogin(user.email, origin);
 
     res.cookie('Authentication', accessToken, accessOptions);
     res.cookie('Refresh', refreshToken, refreshOptions);
@@ -115,13 +115,13 @@ export class AuthController {
 
   @Get('kakao/callback')
   @UseGuards(KakaoAuthGuard)
-  kakaoCallback(
+  async kakaoCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      this.authService.kakaoLogin(user.email, origin);
+      await this.authService.kakaoLogin(user.email, origin);
 
     res.cookie('Authentication', accessToken, accessOptions);
     res.cookie('Refresh', refreshToken, refreshOptions);
@@ -146,13 +146,13 @@ export class AuthController {
 
   @Get('naver/callback')
   @UseGuards(NaverAuthGuard)
-  naverCallback(
+  async naverCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      this.authService.naverLogin(user.email, origin);
+      await this.authService.naverLogin(user.email, origin);
 
     res.cookie('Authentication', accessToken, accessOptions);
     res.cookie('Refresh', refreshToken, refreshOptions);

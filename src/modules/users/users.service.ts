@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RegisterType, User, Theme } from './entities/user.entity';
@@ -75,6 +76,14 @@ export class UsersService {
       throw new UnauthorizedException(
         '이메일 또는 패스워드가 잘못 되었습니다.',
       );
+    return user;
+  }
+
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     return user;
   }
 

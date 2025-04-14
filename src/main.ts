@@ -26,9 +26,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  app.setGlobalPrefix('api/v1',{
-    exclude: ['health']
-  })
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health'],
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

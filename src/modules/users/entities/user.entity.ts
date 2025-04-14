@@ -1,6 +1,6 @@
 import { Entity, Column, OneToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { LoginLog } from 'src/modules/auth/entities/login-log.entity';
+import { LoginLog } from 'src/modules/login-logs/entities/login-log.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
