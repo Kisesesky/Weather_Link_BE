@@ -1,6 +1,7 @@
-import { Entity, Column, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany, ManyToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { LoginLog } from 'src/modules/auth/entities/login-log.entity';
+import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
@@ -39,8 +40,8 @@ export class User extends BaseEntity {
   @Column({ name: 'profile_image', type: 'text', nullable: true })
   profileImage: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  location: string;
+  @ManyToOne(()=> LocationsEntity, (location) => location.users, { nullable: true })
+  location: LocationsEntity;
 
   @Column({
     type: 'enum',
