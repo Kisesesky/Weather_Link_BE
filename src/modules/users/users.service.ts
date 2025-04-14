@@ -9,10 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
-<<<<<<< HEAD
-=======
 import { S3Service } from '../s3/s3.service';
->>>>>>> dev
 
 @Injectable()
 export class UsersService {

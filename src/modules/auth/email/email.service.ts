@@ -1,16 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { CACHE_MANAGER } from "@nestjs/cache-manager"
+import { Cache } from "cache-manager"
 
 type VerificationType = 'signup' | 'password';
 
 @Injectable()
 export class EmailService {
   private transporter: any;
-  private verifiedEmails: Map<string, boolean> = new Map();
-  private verificationCodes: Map<string, { code: string; expiresAt: number }> =
-    new Map();
-
-  constructor() {
+  private readonly logger = new Logger(EmailService.name)
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
+  ) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -18,6 +19,15 @@ export class EmailService {
         pass: process.env.MAIL_PASS,
       },
     });
+  }
+
+  private getVerificationKey(email: string): string {
+    return `verification:${email}`
+  }
+
+  
+  private getVerifiedKey(email: string): string {
+    return `verified:${email}`
   }
 
   private generateEmailTemplate(type: VerificationType, code: string): string {
@@ -66,43 +76,47 @@ export class EmailService {
 
   async sendVerificationCode(to: string, type: VerificationType = 'signup') {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('인증 코드:', code);
+    try{
+      await this.cacheManager.set(this.getVerificationKey(to),code, 120); //2분
+      const subject =
+        type === 'signup'
+          ? '[Weather_Link] 회원가입을 위한 인증번호입니다.'
+          : '[Weather_Link] 비밀번호 재설정을 위한 인증번호입니다.';
 
-    this.verificationCodes.set(to, { code, expiresAt: Date.now() + 600000 });
-    setTimeout(() => this.verificationCodes.delete(to), 600000); // 10분
+      const html = this.generateEmailTemplate(type, code);
+      const mailOptions = {
+        from: process.env.MAIL_USER,
+        to,
+        subject,
+        html,
+      };
+      await this.transporter.sendMail(mailOptions);
 
-    const subject =
-      type === 'signup'
-        ? '[Weather_Link] 회원가입을 위한 인증번호입니다.'
-        : '[Weather_Link] 비밀번호 재설정을 위한 인증번호입니다.';
-
-    const html = this.generateEmailTemplate(type, code);
-
-    const mailOptions = {
-      from: process.env.MAIL_USER,
-      to,
-      subject,
-      html,
-    };
-
-    await this.transporter.sendMail(mailOptions);
+      if(process.env.NODE_ENV === 'dev') {
+        this.logger.log(`인증코드: ${code}`)
+      }
+    } catch (error) {
+      this.logger.error('Cache error:', error)
+      throw new InternalServerErrorException('인증 코드 생성 중 오류가 발생하였습니다.')
+    }
+    
   }
 
   async verifyCode(email: string, code: string): Promise<boolean> {
-    const storedCode = this.verificationCodes.get(email);
+    const storedCode = await this.cacheManager.get(this.getVerificationKey(email));
     if (
-      !storedCode ||
-      storedCode.code !== code ||
-      Date.now() > storedCode.expiresAt
+      !storedCode || storedCode !== code
     ) {
       return false;
     }
 
-    this.verifiedEmails.set(email, true);
+    await this.cacheManager.del(this.getVerificationKey(email));
+    await this.cacheManager.set(this.getVerifiedKey(email), 'true', 24 * 60 * 60 * 1000); //24시간
     return true;
   }
 
   async isEmailVerified(email: string): Promise<boolean> {
-    return this.verifiedEmails.get(email) || false;
+    const verified = await this.cacheManager.get(this.getVerifiedKey(email))
+    return verified === 'true'
   }
 }
