@@ -36,6 +36,6 @@ export class LocationsEntity {
   @Column({ type: 'float', nullable: true })
   latitude: number;
 
-  @OneToMany(()=> User, (user)=> user.location)
-  users: User[]
+  @OneToMany(() => User, (user) => user.location)
+  users: User[];
 }

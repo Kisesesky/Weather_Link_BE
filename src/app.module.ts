@@ -10,6 +10,7 @@ import { WeatherModule } from './modules/weather/weather.module';
 import { FriendsModule } from './modules/friends/friends.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
+import { LoginLogsModule } from './modules/login-logs/login-logs.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ConfigModule } from '@nestjs/config';
     TypeOrmModule.forRoot(AppDataSource.options),
     UsersModule,
     AuthModule,
+    LoginLogsModule,
     LocationsModule,
     WeatherModule,
     FriendsModule,

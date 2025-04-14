@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './controller/auth.controller';
+import { AuthServiceController } from './controller/auth-service.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfigModule } from 'src/config/app/config.module';
@@ -15,7 +16,7 @@ import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
-import { AuthServiceController } from './controller/auth-service.controller';
+import { LoginLogsModule } from '../login-logs/login-logs.module';
 import { RedisCacheModule } from 'src/config/cache/cache.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { RedisCacheModule } from 'src/config/cache/cache.module';
     SocialConfigModule,
     UsersModule,
     S3Module,
+    LoginLogsModule,
     RedisCacheModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({

@@ -14,6 +14,7 @@ import { AppConfigService } from 'src/config/app/config.service';
 import { CookieOptions } from 'express';
 import { EmailService } from './email/email.service';
 import { validatePassword } from 'src/utils/password-validator';
+import { LoginLogsService } from '../login-logs/login-logs.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     private jwtService: JwtService,
     private appConfigService: AppConfigService,
     private emailService: EmailService,
+    private loginLogsService: LoginLogsService,
   ) {}
 
   async signUp(
@@ -49,19 +51,32 @@ export class AuthService {
       throw new UnauthorizedException(
         '이메일 또는 패스워드가 잘못 되었습니다.',
       );
+
+    // 로그인 성공 시 로그인 로그 저장
+    const loginLog = await this.loginLogsService.create(user.id);
+    await this.usersService.updateLastLogin(user.id, loginLog.login_time);
+
     return this.makeJwtToken(logInDto.email, origin);
   }
 
-  googleLogin(email: string, origin: string) {
+  async logAndMakeToken(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    const loginLog = await this.loginLogsService.create(user.id);
+    await this.usersService.updateLastLogin(user.id, loginLog.login_time);
+
     return this.makeJwtToken(email, origin);
   }
 
-  kakaoLogin(email: string, origin: string) {
-    return this.makeJwtToken(email, origin);
+  async googleLogin(email: string, origin: string) {
+    return this.logAndMakeToken(email, origin);
   }
 
-  naverLogin(email: string, origin: string) {
-    return this.makeJwtToken(email, origin);
+  async kakaoLogin(email: string, origin: string) {
+    return this.logAndMakeToken(email, origin);
+  }
+
+  async naverLogin(email: string, origin: string) {
+    return this.logAndMakeToken(email, origin);
   }
 
   logout(origin: string) {
