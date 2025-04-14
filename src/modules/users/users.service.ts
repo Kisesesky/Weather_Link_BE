@@ -10,8 +10,6 @@ import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { S3Service } from '../s3/s3.service';
-import { comparePassword, encryptPassword } from 'src/utils/password-util';
-import { validatePassword } from 'src/utils/password-validator';
 
 @Injectable()
 export class UsersService {
@@ -24,15 +22,40 @@ export class UsersService {
   async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
     let profileImageUrl;
 
-    if (profileImage) {
+    // 소셜 로그인의 경우 (registerType이 EMAIL이 아닌 경우)
+    if (signUpDto.registerType !== RegisterType.EMAIL) {
+      // profileImage가 문자열인 경우 (소셜 로그인)
+      if (typeof signUpDto.profileImage === 'string') {
+        profileImageUrl = signUpDto.profileImage;
+      }
+    }
+    // 일반 회원가입의 경우
+    else if (profileImage) {
       profileImageUrl = await this.s3Service.uploadImage(
         profileImage,
         'profiles',
       );
     }
 
+    // 이메일 중복 체크
+    const existingUser = await this.userRepository.findOne({
+      where: { email: signUpDto.email },
+    });
+    if (existingUser) {
+      throw new BadRequestException('이미 사용 중인 이메일입니다.');
+    }
+
+    // 닉네임 중복 체크
+    const isNameAvailable = await this.isNameAvailable(signUpDto.name);
+    if (!isNameAvailable) {
+      throw new BadRequestException('이미 사용 중인 닉네임입니다.');
+    }
+
+    // profileImage 필드를 제외한 나머지 필드로 객체 생성
+    const { profileImage: _, ...restDto } = signUpDto;
+
     const user = this.userRepository.create({
-      ...signUpDto,
+      ...restDto,
       profileImage: profileImageUrl,
     });
 

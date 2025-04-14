@@ -19,6 +19,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SignUpDto } from '../dto/sign-up.dto';
 import { ResponseSignUpDto } from '../dto/response-sign-up.dto';
@@ -29,6 +30,7 @@ import { GoogleAuthGuard } from '../guards/google-auth.guard';
 import { KakaoAuthGuard } from '../guards/kakao-auth.guard';
 import { NaverAuthGuard } from '../guards/naver-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -164,6 +166,8 @@ export class AuthController {
 
   @ApiOperation({ summary: '로그아웃' })
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   logout(@Res() res: Response, @RequestOrigin() origin: string) {
     const { accessOptions, refreshOptions } =
       this.authService.expireJwtToken(origin);
