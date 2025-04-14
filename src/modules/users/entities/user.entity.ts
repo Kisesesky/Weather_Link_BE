@@ -1,7 +1,7 @@
 import { Entity, Column, OneToMany, ManyToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { LoginLog } from 'src/modules/auth/entities/login-log.entity';
-import { LocationsEntity } from './../../locations/entities/location.entity';
+import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
