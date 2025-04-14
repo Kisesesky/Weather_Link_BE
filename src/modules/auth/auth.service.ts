@@ -53,14 +53,17 @@ export class AuthService {
       );
 
     // 로그인 성공 시 로그인 로그 저장
-    await this.loginLogsService.create(user.id);
+    const loginLog = await this.loginLogsService.create(user.id);
+    await this.usersService.updateLastLogin(user.id, loginLog.login_time);
 
     return this.makeJwtToken(logInDto.email, origin);
   }
 
   async logAndMakeToken(email: string, origin: string) {
     const user = await this.usersService.findUserByEmail(email);
-    await this.loginLogsService.create(user.id);
+    const loginLog = await this.loginLogsService.create(user.id);
+    await this.usersService.updateLastLogin(user.id, loginLog.login_time);
+
     return this.makeJwtToken(email, origin);
   }
 

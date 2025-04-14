@@ -26,6 +26,7 @@ export class UpdateUserDto {
     type: 'string',
     format: 'binary',
     description: '프로필 이미지 파일',
+    required: false,
   })
   @IsOptional()
   profileImage?: Express.Multer.File;
@@ -33,7 +34,7 @@ export class UpdateUserDto {
   @ApiProperty({
     type: String,
     description: '위치 정보',
-    example: '서울시 강남구',
+    example: '9bb48bb2-0d6c-43a1-b0b2-406797ca2a93',
     required: false,
   })
   @IsOptional()

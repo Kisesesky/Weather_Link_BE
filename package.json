@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.782.0",
+    "@fast-csv/parse": "^5.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -38,8 +39,11 @@
     "@nestjs/websockets": "^11.0.14",
     "@types/bcrypt": "^5.0.2",
     "@types/passport-jwt": "^4.0.1",
+    "@types/qs": "^6.9.18",
+    "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "class-validator": "^0.14.1",
+    "csv-parser": "^3.2.0",
     "joi": "^17.13.3",
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
@@ -48,8 +52,9 @@
     "passport-kakao": "^1.0.1",
     "passport-naver": "^1.0.6",
     "pg": "^8.14.1",
+    "qs": "^6.14.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
+    "rxjs": "^7.8.2",
     "typeorm": "^0.3.22"
   },
   "devDependencies": {

@@ -16,7 +16,7 @@ import { S3Service } from '../s3/s3.service';
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private usersRepository: Repository<User>,
     private s3Service: S3Service,
   ) {}
 
@@ -39,7 +39,7 @@ export class UsersService {
     }
 
     // 이메일 중복 체크
-    const existingUser = await this.userRepository.findOne({
+    const existingUser = await this.usersRepository.findOne({
       where: { email: signUpDto.email },
     });
     if (existingUser) {
@@ -55,23 +55,23 @@ export class UsersService {
     // profileImage 필드를 제외한 나머지 필드로 객체 생성
     const { profileImage: _, ...restDto } = signUpDto;
 
-    const user = this.userRepository.create({
+    const user = this.usersRepository.create({
       ...restDto,
       profileImage: profileImageUrl,
     });
 
-    await this.userRepository.save(user);
+    await this.usersRepository.save(user);
     const { password, ...rest } = user;
     return rest;
   }
 
   async isNameAvailable(name: string) {
-    const existName = await this.userRepository.findOne({ where: { name } });
+    const existName = await this.usersRepository.findOne({ where: { name } });
     return !existName;
   }
 
   async findUserByEmail(email: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.usersRepository.findOne({ where: { email } });
     if (!user)
       throw new UnauthorizedException(
         '이메일 또는 패스워드가 잘못 되었습니다.',
@@ -79,8 +79,8 @@ export class UsersService {
     return user;
   }
 
-  async findById(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
+  async findUserById(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -88,9 +88,16 @@ export class UsersService {
   }
 
   findUserBySocialId(socialId: string, registerType: RegisterType) {
-    return this.userRepository.findOne({
+    return this.usersRepository.findOne({
       where: { socialId, registerType },
     });
+  }
+
+  findUserByName(name: string) {
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.name) LIKE LOWER(:name)', { name: `%${name}%` })
+      .getMany();
   }
 
   async updateUser(
@@ -98,7 +105,7 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     profileImage?: Express.Multer.File,
   ) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
     }
@@ -124,7 +131,7 @@ export class UsersService {
 
     // 사용자 정보 업데이트 (이메일 제외)
     Object.assign(user, updateUserDto);
-    await this.userRepository.save(user);
+    await this.usersRepository.save(user);
 
     const { password, ...rest } = user;
     return rest;
@@ -134,7 +141,7 @@ export class UsersService {
     userId: string,
     updateThemeDto: UpdateThemeDto,
   ): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
     }
@@ -147,26 +154,30 @@ export class UsersService {
     }
 
     user.theme = updateThemeDto.theme;
-    return this.userRepository.save(user);
+    return this.usersRepository.save(user);
+  }
+
+  async updateLastLogin(userId: string, lastLoginAt: Date) {
+    await this.usersRepository.update(userId, { lastLoginAt });
   }
 
   async deleteUser(userId: string): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException(
         '인증 정보가 없습니다. 로그인 후 이용해주세요.',
       );
     }
 
-    await this.userRepository.remove(user);
+    await this.usersRepository.remove(user);
   }
 
   async updatePassword(email: string, hashedPassword: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.usersRepository.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
     }
     user.password = hashedPassword;
-    return this.userRepository.save(user);
+    return this.usersRepository.save(user);
   }
 }

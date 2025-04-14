@@ -9,6 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
+import { LocationsEntity } from './../../locations/entities/location.entity';
 
 export class SignUpDto {
   @ApiProperty({
@@ -41,8 +42,7 @@ export class SignUpDto {
   profileImage?: Express.Multer.File;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  location?: LocationsEntity;
 
   @ApiProperty({ type: String, description: '이름' })
   @IsString()

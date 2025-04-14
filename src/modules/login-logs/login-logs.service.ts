@@ -2,33 +2,32 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LoginLog } from './entities/login-log.entity';
 import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class LoginLogsService {
   constructor(
     @InjectRepository(LoginLog)
-    private readonly loginLogRepository: Repository<LoginLog>,
-    private readonly userService: UsersService,
+    private readonly loginLogsRepository: Repository<LoginLog>,
+    private readonly usersService: UsersService,
   ) {}
 
   async create(userId: string): Promise<LoginLog> {
-    const user = await this.userService.findById(userId);
+    const user = await this.usersService.findUserById(userId);
     if (!user) {
-      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException('User not found');
     }
 
-    const loginLog = this.loginLogRepository.create({
+    const loginLog = this.loginLogsRepository.create({
       user,
       login_time: new Date(),
     });
 
-    return this.loginLogRepository.save(loginLog);
+    return this.loginLogsRepository.save(loginLog);
   }
 
   // 이력 조회용
   async findAll(): Promise<LoginLog[]> {
-    return this.loginLogRepository.find({ relations: ['user'] });
+    return this.loginLogsRepository.find({ relations: ['user'] });
   }
 }
