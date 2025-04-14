@@ -7,7 +7,8 @@ type VerificationType = 'signup' | 'password';
 export class EmailService {
   private transporter: any;
   private verifiedEmails: Map<string, boolean> = new Map();
-  private verificationCodes: Map<string, { code: string; expiresAt: number }> = new Map();
+  private verificationCodes: Map<string, { code: string; expiresAt: number }> =
+    new Map();
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -26,7 +27,9 @@ export class EmailService {
         : `아래의 인증번호를 입력해주세요.`;
 
     const subjectTitle =
-      type === 'signup' ? '[Weather_Link] 회원가입을 위한 인증번호입니다.' : '[Weather_Link] 비밀번호 재설정을 위한 인증번호입니다.';
+      type === 'signup'
+        ? '[Weather_Link] 회원가입을 위한 인증번호입니다.'
+        : '[Weather_Link] 비밀번호 재설정을 위한 인증번호입니다.';
 
     return `
       <div style="max-width: 520px; margin: 40px auto; padding: 40px 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff;">
@@ -85,7 +88,7 @@ export class EmailService {
     await this.transporter.sendMail(mailOptions);
   }
 
-  verifyCode(email: string, code: string): boolean {
+  async verifyCode(email: string, code: string): Promise<boolean> {
     const storedCode = this.verificationCodes.get(email);
     if (
       !storedCode ||

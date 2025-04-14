@@ -10,4 +10,4 @@ export class UpdateThemeDto {
   })
   @IsEnum(Theme, { message: '테마는 light 또는 dark만 선택 가능합니다.' })
   theme: Theme;
-} 
+}

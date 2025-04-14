@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
@@ -10,20 +9,57 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
-import { comparePassword, encryptPassword } from 'src/utils/password-util';
-import { validatePassword } from 'src/utils/password-validator';
+import { S3Service } from '../s3/s3.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private s3Service: S3Service,
   ) {}
 
-  async createUser(signUpDto: SignUpDto) {
-    const user = this.userRepository.create(signUpDto);
-    await this.userRepository.save(user);
+  async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
+    let profileImageUrl;
 
+    // 소셜 로그인의 경우 (registerType이 EMAIL이 아닌 경우)
+    if (signUpDto.registerType !== RegisterType.EMAIL) {
+      // profileImage가 문자열인 경우 (소셜 로그인)
+      if (typeof signUpDto.profileImage === 'string') {
+        profileImageUrl = signUpDto.profileImage;
+      }
+    }
+    // 일반 회원가입의 경우
+    else if (profileImage) {
+      profileImageUrl = await this.s3Service.uploadImage(
+        profileImage,
+        'profiles',
+      );
+    }
+
+    // 이메일 중복 체크
+    const existingUser = await this.userRepository.findOne({
+      where: { email: signUpDto.email },
+    });
+    if (existingUser) {
+      throw new BadRequestException('이미 사용 중인 이메일입니다.');
+    }
+
+    // 닉네임 중복 체크
+    const isNameAvailable = await this.isNameAvailable(signUpDto.name);
+    if (!isNameAvailable) {
+      throw new BadRequestException('이미 사용 중인 닉네임입니다.');
+    }
+
+    // profileImage 필드를 제외한 나머지 필드로 객체 생성
+    const { profileImage: _, ...restDto } = signUpDto;
+
+    const user = this.userRepository.create({
+      ...restDto,
+      profileImage: profileImageUrl,
+    });
+
+    await this.userRepository.save(user);
     const { password, ...rest } = user;
     return rest;
   }
@@ -48,7 +84,11 @@ export class UsersService {
     });
   }
 
-  async updateUser(userId: string, updateUserDto: UpdateUserDto) {
+  async updateUser(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+    profileImage?: Express.Multer.File,
+  ) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
@@ -62,14 +102,16 @@ export class UsersService {
       }
     }
 
-    // 테마 값 검증
-    if (updateUserDto.theme !== undefined) {
-      if (!Object.values(Theme).includes(updateUserDto.theme)) {
-        throw new BadRequestException(
-          '테마는 light 또는 dark만 선택 가능합니다.',
-        );
-      }
+    // 프로필 이미지 업로드 처리
+    let profileImageUrl;
+
+    if (profileImage) {
+      profileImageUrl = await this.s3Service.uploadImage(
+        profileImage,
+        'profiles',
+      );
     }
+    user.profileImage = profileImageUrl;
 
     // 사용자 정보 업데이트 (이메일 제외)
     Object.assign(user, updateUserDto);

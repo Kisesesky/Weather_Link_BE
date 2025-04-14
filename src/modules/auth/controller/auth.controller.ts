@@ -6,12 +6,21 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import { Response } from 'express';
 import { AuthService } from '../auth.service';
 import { LogInDto } from '../dto/log-in.dto';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SignUpDto } from '../dto/sign-up.dto';
 import { ResponseSignUpDto } from '../dto/response-sign-up.dto';
 import { RequestOrigin } from 'src/common/decorators/request.origin';
@@ -20,6 +29,8 @@ import { User } from '../../users/entities/user.entity';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
 import { KakaoAuthGuard } from '../guards/kakao-auth.guard';
 import { NaverAuthGuard } from '../guards/naver-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -28,10 +39,15 @@ export class AuthController {
 
   @ApiOperation({ summary: '회원가입' })
   @ApiResponse({ type: ResponseSignUpDto, status: HttpStatus.CREATED })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('profileImage'))
   @ApiBody({ type: SignUpDto })
   @Post('signup')
-  async signUp(@Body() signUpDto: SignUpDto): Promise<ResponseSignUpDto> {
-    return this.authService.signUp(signUpDto);
+  async signUp(
+    @Body() signUpDto: SignUpDto,
+    @UploadedFile() profileImage?: Express.Multer.File,
+  ): Promise<ResponseSignUpDto> {
+    return this.authService.signUp(signUpDto, profileImage);
   }
 
   @ApiOperation({ summary: '로그인' })
@@ -150,6 +166,8 @@ export class AuthController {
 
   @ApiOperation({ summary: '로그아웃' })
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   logout(@Res() res: Response, @RequestOrigin() origin: string) {
     const { accessOptions, refreshOptions } =
       this.authService.expireJwtToken(origin);

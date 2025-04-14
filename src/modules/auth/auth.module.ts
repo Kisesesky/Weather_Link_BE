@@ -14,6 +14,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
+import { S3Module } from '../s3/s3.module';
 import { AuthServiceController } from './controller/auth-service.controller';
 
 @Module({
@@ -21,6 +22,7 @@ import { AuthServiceController } from './controller/auth-service.controller';
     AppConfigModule,
     SocialConfigModule,
     UsersModule,
+    S3Module,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [AppConfigModule],
