@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppConfigService {
+  jwtService: string | Buffer<ArrayBufferLike> | undefined;
   constructor(private configService: ConfigService) {}
 
   get jwtSecret() {
@@ -15,17 +16,5 @@ export class AppConfigService {
 
   get port() {
     return this.configService.get<number>('app.port');
-  }
-
-  get googleClientId() {
-    return this.configService.get<string>('app.googleClientId');
-  }
-
-  get googleClientSecret() {
-    return this.configService.get<string>('app.googleClientSecret');
-  }
-
-  get googleCallbackUrl() {
-    return this.configService.get<string>('app.googleCallbackUrl');
   }
 }
