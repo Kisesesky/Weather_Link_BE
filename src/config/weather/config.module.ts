@@ -11,6 +11,8 @@ import { WeatherConfigService } from './config.service';
       validationSchema: Joi.object({
         AIR_API_KEY: Joi.string().required(),
         AIR_API_URL: Joi.string().required(),
+        MID_FORECAST_API_KEY: Joi.string().required(),
+        MID_FORECAST_API_URL: Joi.string().required(),
       }),
       isGlobal: true,
     }),

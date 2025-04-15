@@ -12,4 +12,12 @@ export class WeatherConfigService {
   get weatherAirApiUrl() {
     return this.configService.get<string>('weather.weatherAirApiUrl');
   }
+
+  get midForecastApiKey() {
+    return this.configService.get<string>('weather.midForecastApiKey');
+  }
+
+  get midForecastApiUrl() {
+    return this.configService.get<string>('weather.midForecastApiUrl');
+  }
 }

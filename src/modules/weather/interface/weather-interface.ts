@@ -6,10 +6,18 @@ export interface AirQualityItem {
     dataTime: Date;
   }
   
-  export interface ApiResponse {
-    response: {
-      body: {
-        items: any[];
-      };
+export interface ApiResponse {
+  response: {
+    body: {
+      items: any[];
     };
-  }
+  };
+}
+
+export interface RegionMapping {
+  regId: string;
+  regions: {
+    sido: string;
+    guguns?: string[];
+  }[];
+}

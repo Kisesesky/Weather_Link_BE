@@ -8,8 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as csv from 'csv-parser';
-import { LocationsEntity } from './entities/location.entity';
-import { Theme } from '../users/entities/user.entity';
+import { LocationsEntity } from '../entities/location.entity';
 
 @Injectable()
 export class LocationsService implements OnModuleInit {

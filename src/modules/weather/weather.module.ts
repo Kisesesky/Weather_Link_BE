@@ -7,11 +7,14 @@ import { WeatherAirEntity } from './entities/weather-air.entity';
 import { LocationsEntity } from '../locations/entities/location.entity';
 import { WeatherConfigService } from 'src/config/weather/config.service';
 import { WeatherConfigModule } from 'src/config/weather/config.module';
+import { MidForecastService } from './service/mid-forecast.service';
+import { MidTermForecastEntity } from './entities/mid-term-forecast.entity';
+import { LocationsModule } from '../locations/locations.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WeatherAirEntity, LocationsEntity]), WeatherConfigModule],
+  imports: [TypeOrmModule.forFeature([WeatherAirEntity, LocationsEntity, MidTermForecastEntity]), WeatherConfigModule, LocationsModule],
   controllers: [WeatherController],
-  providers: [WeatherService, WeatherAirService, WeatherConfigService],
+  providers: [WeatherService, WeatherAirService, WeatherConfigService, MidForecastService],
   exports: [WeatherAirService]
 })
 export class WeatherModule {}

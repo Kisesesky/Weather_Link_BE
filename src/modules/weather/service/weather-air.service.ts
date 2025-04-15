@@ -7,8 +7,9 @@ import { LocationsEntity } from "src/modules/locations/entities/location.entity"
 import { LessThan, Repository } from "typeorm";
 import { WeatherAirEntity } from "../entities/weather-air.entity";
 import { AirQualityItem, ApiResponse } from "../interface/weather-interface";
-import { sidoList, SIDO_NAME_MAP } from "../util/region-map";
+import { SIDO_NAME_MAP } from "../../locations/utils/region-map";
 import { WeatherConfigService } from './../../../config/weather/config.service';
+import { AirQualityResponseDto } from "../dto/weather-air.dto";
 
 @Injectable()
 export class WeatherAirService {
@@ -36,6 +37,7 @@ export class WeatherAirService {
     const servicekey = this.weatherConfigService.weatherAirApiKey as string
     const serviceUrl = this.weatherConfigService.weatherAirApiUrl as string
     const results: AirQualityItem[] = [];
+    const sidoList = Object.keys(SIDO_NAME_MAP);
 
     for (const sidoName of sidoList) {
       try {
@@ -90,9 +92,14 @@ export class WeatherAirService {
 
     const { sido, gugun } = location;
 
-    return this.airQulityRepository.findOne({
+    const airQuality = await this.airQulityRepository.findOne({
       where: { sido, gugun },
       order: { dataTime: 'DESC' }
     });
+
+    if(!airQuality) {
+        throw new NotFoundException('미세먼지 데이터를 찾을 수 없습니다.')
+    }
+    return new AirQualityResponseDto(airQuality)
   }
 }  
