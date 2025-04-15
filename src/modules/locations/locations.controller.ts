@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
-import { LocationsService } from './locations.service';
+import { LocationsService } from './service/locations.service';
 import * as path from 'path';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
