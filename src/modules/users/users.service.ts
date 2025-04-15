@@ -96,8 +96,7 @@ export class UsersService {
   findUserByName(name: string) {
     return this.usersRepository
       .createQueryBuilder('user')
-      .where('LOWER(user.name) LIKE LOWER(:name)', { name: `%${name}%` })
-      .getMany();
+      .where('LOWER(user.name) LIKE LOWER(:name)', { name: `%${name}%` });
   }
 
   async updateUser(

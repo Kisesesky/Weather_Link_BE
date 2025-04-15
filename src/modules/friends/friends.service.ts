@@ -2,12 +2,17 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { Repository } from 'typeorm';
 import { Friend } from './entities/friend.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { paginate } from 'src/utils/pagination.util';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { User } from '../users/entities/user.entity';
+import { ILike } from 'typeorm';
 
 @Injectable()
 export class FriendsService {
@@ -18,8 +23,9 @@ export class FriendsService {
   ) {}
 
   // 유저 검색
-  async searchUsers(name: string) {
-    return this.usersService.findUserByName(name);
+  async searchUsers(name: string, paginationDto: PaginationDto) {
+    const query = this.usersService.findUserByName(name);
+    return paginate(User, paginationDto, query);
   }
 
   async sendFriendRequest(senderId: string, receiverId: string) {
@@ -83,20 +89,6 @@ export class FriendsService {
     return this.friendRepository.save(request);
   }
 
-  async getFriends(userId: string) {
-    const accepted = await this.friendRepository.find({
-      where: [
-        { sender: { id: userId }, status: 'accepted' },
-        { receiver: { id: userId }, status: 'accepted' },
-      ],
-      relations: ['sender', 'receiver'],
-    });
-
-    return accepted.map((friend) =>
-      friend.sender.id === userId ? friend.receiver : friend.sender,
-    );
-  }
-
   // 보낸 친구 요청 목록
   async getSentRequests(userId: string) {
     return this.friendRepository.find({
@@ -113,16 +105,100 @@ export class FriendsService {
     });
   }
 
-  // 친구 목록 조회
-  async getFriendsList(userId: string) {
+  // 친구로 등록된 전체 목록 조회
+  async getFriendsList(userId: string, paginationDto: PaginationDto) {
+    try {
+      const friends = await this.friendRepository.find({
+        where: [
+          {
+            sender: { id: userId },
+            status: 'accepted',
+          },
+          {
+            receiver: { id: userId },
+            status: 'accepted',
+          },
+        ],
+        relations: ['sender', 'receiver'],
+        skip: paginationDto.skip,
+        take: paginationDto.take,
+      });
+
+      const total = await this.friendRepository.count({
+        where: [
+          {
+            sender: { id: userId },
+            status: 'accepted',
+          },
+          {
+            receiver: { id: userId },
+            status: 'accepted',
+          },
+        ],
+      });
+
+      return {
+        data: friends.map((friend) =>
+          friend.sender.id === userId ? friend.receiver : friend.sender,
+        ),
+        total,
+        take: paginationDto.take,
+        skip: paginationDto.skip,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        '친구 목록 조회 중 오류가 발생했습니다.',
+      );
+    }
+  }
+
+  // 친구로 등록된 목록 중 닉네임 검색
+  async searchFriends(
+    userId: string,
+    name: string,
+    paginationDto: PaginationDto,
+  ) {
     const friends = await this.friendRepository.find({
-      where: { sender: { id: userId }, status: 'accepted' },
-      relations: ['receiver'],
+      where: [
+        {
+          sender: { id: userId },
+          receiver: { name: ILike(`%${name}%`) },
+          status: 'accepted',
+        },
+        {
+          receiver: { id: userId },
+          sender: { name: ILike(`%${name}%`) },
+          status: 'accepted',
+        },
+      ],
+      relations: ['sender', 'receiver'],
+      skip: paginationDto.skip,
+      take: paginationDto.take,
     });
 
-    return friends.map((relation) =>
-      relation.sender.id === userId ? relation.receiver : relation.sender,
-    );
+    const total = await this.friendRepository.count({
+      where: [
+        {
+          sender: { id: userId },
+          receiver: { name: ILike(`%${name}%`) },
+          status: 'accepted',
+        },
+        {
+          receiver: { id: userId },
+          sender: { name: ILike(`%${name}%`) },
+          status: 'accepted',
+        },
+      ],
+    });
+
+    return {
+      data: friends.map((friend) =>
+        friend.sender.id === userId ? friend.receiver : friend.sender,
+      ),
+      total,
+      take: paginationDto.take,
+      skip: paginationDto.skip,
+    };
   }
 
   // 친구 목록에서 특정 친구 삭제

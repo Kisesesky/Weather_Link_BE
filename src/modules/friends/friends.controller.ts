@@ -20,6 +20,7 @@ import {
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
 import { RespondFriendRequestDto } from './dto/response-friend-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiTags('Friend')
 @ApiBearerAuth()
@@ -31,9 +32,11 @@ export class FriendsController {
   @Get('search')
   @ApiOperation({ summary: '유저 검색' })
   @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
+  @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
+  @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
   @ApiResponse({ status: 200, description: '유저 검색 결과 반환' })
-  search(@Query('name') name: string) {
-    return this.friendsService.searchUsers(name);
+  search(@Query('name') name: string, @Query() paginationDto: PaginationDto) {
+    return this.friendsService.searchUsers(name, paginationDto);
   }
 
   @Post('request')
@@ -58,9 +61,11 @@ export class FriendsController {
 
   @Get()
   @ApiOperation({ summary: '친구 목록 조회' })
+  @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
+  @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
   @ApiResponse({ status: 200, description: '나의 친구 목록 반환' })
-  getFriends(@Req() req) {
-    return this.friendsService.getFriends(req.user.id);
+  getFriends(@Req() req, @Query() paginationDto: PaginationDto) {
+    return this.friendsService.getFriendsList(req.user.id, paginationDto);
   }
 
   @Get('requests/pending')
@@ -82,5 +87,19 @@ export class FriendsController {
   @ApiResponse({ status: 200, description: '친구 삭제 완료' })
   removeFriend(@Req() req, @Body() body: { friendId: string }) {
     return this.friendsService.removeFriend(req.user.id, body.friendId);
+  }
+
+  @Get('search/friends')
+  @ApiOperation({ summary: '친구 목록에서 검색' })
+  @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
+  @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
+  @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
+  @ApiResponse({ status: 200, description: '친구 검색 결과 반환' })
+  searchFriends(
+    @Req() req,
+    @Query('name') name: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.friendsService.searchFriends(req.user.id, name, paginationDto);
   }
 }
