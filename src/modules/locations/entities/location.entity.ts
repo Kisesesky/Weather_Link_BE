@@ -16,6 +16,12 @@ export class LocationsEntity {
   stationCode: string;
 
   @Column()
+  forecastCode: string
+
+  @Column()
+  forecastStationCode: string
+
+  @Column()
   sido: string;
 
   @Column({ nullable: true })
