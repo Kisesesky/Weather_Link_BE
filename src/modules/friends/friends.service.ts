@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
@@ -107,49 +106,43 @@ export class FriendsService {
 
   // 친구로 등록된 전체 목록 조회
   async getFriendsList(userId: string, paginationDto: PaginationDto) {
-    try {
-      const friends = await this.friendRepository.find({
-        where: [
-          {
-            sender: { id: userId },
-            status: 'accepted',
-          },
-          {
-            receiver: { id: userId },
-            status: 'accepted',
-          },
-        ],
-        relations: ['sender', 'receiver'],
-        skip: paginationDto.skip,
-        take: paginationDto.take,
-      });
+    const friends = await this.friendRepository.find({
+      where: [
+        {
+          sender: { id: userId },
+          status: 'accepted',
+        },
+        {
+          receiver: { id: userId },
+          status: 'accepted',
+        },
+      ],
+      relations: ['sender', 'receiver'],
+      skip: paginationDto.skip,
+      take: paginationDto.take,
+    });
 
-      const total = await this.friendRepository.count({
-        where: [
-          {
-            sender: { id: userId },
-            status: 'accepted',
-          },
-          {
-            receiver: { id: userId },
-            status: 'accepted',
-          },
-        ],
-      });
+    const total = await this.friendRepository.count({
+      where: [
+        {
+          sender: { id: userId },
+          status: 'accepted',
+        },
+        {
+          receiver: { id: userId },
+          status: 'accepted',
+        },
+      ],
+    });
 
-      return {
-        data: friends.map((friend) =>
-          friend.sender.id === userId ? friend.receiver : friend.sender,
-        ),
-        total,
-        take: paginationDto.take,
-        skip: paginationDto.skip,
-      };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        '친구 목록 조회 중 오류가 발생했습니다.',
-      );
-    }
+    return {
+      data: friends.map((friend) =>
+        friend.sender.id === userId ? friend.receiver : friend.sender,
+      ),
+      total,
+      take: paginationDto.take,
+      skip: paginationDto.skip,
+    };
   }
 
   // 친구로 등록된 목록 중 닉네임 검색

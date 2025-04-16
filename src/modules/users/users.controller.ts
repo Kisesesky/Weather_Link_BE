@@ -7,6 +7,9 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
+  Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -21,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 @ApiTags('사용자')
 @ApiBearerAuth()
@@ -32,8 +36,8 @@ export class UsersController {
   @Get('myinfo')
   @ApiOperation({ summary: '내 정보 조회' })
   @ApiResponse({ status: 200, description: '내 정보 조회 성공', type: User })
-  getMe(@RequestUser() user: User) {
-    return user;
+  async getMe(@RequestUser() user: User) {
+    return this.usersService.getMyInfo(user.id);
   }
 
   @Patch('myinfo')
@@ -46,7 +50,15 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() profileImage?: Express.Multer.File,
   ) {
-    return this.usersService.updateUser(user.id, updateUserDto, profileImage);
+    try {
+      return await this.usersService.updateUser(
+        user.id,
+        updateUserDto,
+        profileImage,
+      );
+    } catch (error) {
+      throw new BadRequestException('회원 정보 수정에 실패했습니다.');
+    }
   }
 
   @Delete('myinfo')
@@ -55,5 +67,72 @@ export class UsersController {
   async deleteAccount(@RequestUser() user: User) {
     await this.usersService.deleteUser(user.id);
     return { message: '회원 탈퇴가 완료되었습니다.' };
+  }
+
+  @Get('location')
+  @ApiOperation({ summary: '사용자 위치 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '사용자 위치 정보 조회 성공',
+    schema: {
+      example: {
+        id: '9bb48bb2-0d6c-43a1-b0b2-406797ca2a93',
+        sido: '서울특별시',
+        gugun: '강남구',
+        dong: '역삼1동',
+        nx: 61,
+        ny: 126,
+        longitude: 127.0365,
+        latitude: 37.5006,
+      },
+    },
+  })
+  async getUserLocation(@Request() req) {
+    return this.usersService.getUserLocation(req.user.id);
+  }
+
+  @Patch('location')
+  @ApiOperation({ summary: '사용자 위치 정보 수정' })
+  @ApiResponse({
+    status: 200,
+    description: '사용자 위치 정보 수정 성공',
+    schema: {
+      example: {
+        id: '9bb48bb2-0d6c-43a1-b0b2-406797ca2a93',
+        sido: '서울특별시',
+        gugun: '강남구',
+        dong: '역삼1동',
+        nx: 61,
+        ny: 126,
+        longitude: 127.0365,
+        latitude: 37.5006,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 위치 ID 또는 위치 정보 수정 실패',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '사용자를 찾을 수 없음',
+  })
+  async updateUserLocation(
+    @Request() req,
+    @Body() updateLocationDto: UpdateLocationDto,
+  ) {
+    try {
+      return await this.usersService.updateUserLocation(
+        req.user.id,
+        updateLocationDto.locationId,
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        '위치 정보 수정에 실패했습니다. 올바른 위치 ID를 입력해주세요.',
+      );
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from 'src/modules/users/entities/user.entity';
+import { ChatRoom } from 'src/modules/chat/entities/chatRoom.entity';
 
 @Entity()
 export class LocationsEntity {
@@ -38,4 +39,7 @@ export class LocationsEntity {
 
   @OneToMany(() => User, (user) => user.location)
   users: User[];
+
+  @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.location)
+  chatRooms: ChatRoom[];
 }

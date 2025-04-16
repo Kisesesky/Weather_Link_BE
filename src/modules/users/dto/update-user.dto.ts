@@ -32,16 +32,6 @@ export class UpdateUserDto {
   profileImage?: Express.Multer.File;
 
   @ApiProperty({
-    type: String,
-    description: '위치 정보',
-    example: '9bb48bb2-0d6c-43a1-b0b2-406797ca2a93',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  location?: string;
-
-  @ApiProperty({
     enum: Theme,
     description: '테마 설정 (light 또는 dark)',
     example: Theme.LIGHT,

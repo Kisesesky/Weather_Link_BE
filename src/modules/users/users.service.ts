@@ -11,6 +11,8 @@ import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { S3Service } from '../s3/s3.service';
+import { LocationsService } from '../locations/locations.service';
+import { ChatRoomsService } from '../chat/service/chatRoom.service';
 
 @Injectable()
 export class UsersService {
@@ -18,6 +20,8 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private s3Service: S3Service,
+    private locationsService: LocationsService,
+    private chatRoomsService: ChatRoomsService,
   ) {}
 
   async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
@@ -79,15 +83,37 @@ export class UsersService {
     return user;
   }
 
-  async findUserById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+  async findUserById(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['location'],
+    });
+
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
+
     return user;
   }
 
-  findUserBySocialId(socialId: string, registerType: RegisterType) {
+  async getMyInfo(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      profileImage: user.profileImage,
+    };
+  }
+
+  async findUserBySocialId(socialId: string, registerType: RegisterType) {
     return this.usersRepository.findOne({
       where: { socialId, registerType },
     });
@@ -104,12 +130,15 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     profileImage?: Express.Multer.File,
   ) {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
     }
 
-    // 닉네임 변경 시 중복 검사
+    // 닉네임 중복 검사
     if (updateUserDto.name && updateUserDto.name !== user.name) {
       const isNameAvailable = await this.isNameAvailable(updateUserDto.name);
       if (!isNameAvailable) {
@@ -118,21 +147,18 @@ export class UsersService {
     }
 
     // 프로필 이미지 업로드 처리
-    let profileImageUrl;
-
     if (profileImage) {
-      profileImageUrl = await this.s3Service.uploadImage(
+      user.profileImage = await this.s3Service.uploadImage(
         profileImage,
         'profiles',
       );
     }
-    user.profileImage = profileImageUrl;
 
-    // 사용자 정보 업데이트 (이메일 제외)
+    // 사용자 정보 업데이트
     Object.assign(user, updateUserDto);
-    await this.usersRepository.save(user);
 
-    const { password, ...rest } = user;
+    const updatedUser = await this.usersRepository.save(user);
+    const { password, ...rest } = updatedUser;
     return rest;
   }
 
@@ -178,5 +204,87 @@ export class UsersService {
     }
     user.password = hashedPassword;
     return this.usersRepository.save(user);
+  }
+
+  // 사용자 위치 정보 조회
+  async getUserLocation(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['location'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return user.location;
+  }
+
+  // 이전 위치의 채팅방에서 사용자 제외
+  private async removeUserFromOldChatRoom(userId: string, oldSido: string) {
+    const oldChatRoom = await this.chatRoomsService.findOne(oldSido);
+    if (oldChatRoom) {
+      oldChatRoom.participants = oldChatRoom.participants.filter(
+        (participant) => participant.id !== userId,
+      );
+      await this.chatRoomsService.save(oldChatRoom);
+    }
+  }
+
+  // 새로운 위치의 채팅방에 사용자 참여
+  private async addUserToNewChatRoom(userId: string, newSido: string) {
+    await this.chatRoomsService.addUserToChatRoom(userId, newSido);
+  }
+
+  // 사용자 위치 정보 수정
+  async updateUserLocation(userId: string, locationId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['location'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const location = await this.locationsService.findById(locationId);
+    if (!location) {
+      throw new NotFoundException('선택한 지역을 찾을 수 없습니다.');
+    }
+
+    // 이전 위치의 채팅방에서 사용자 제외
+    if (user.location) {
+      try {
+        await this.removeUserFromOldChatRoom(userId, user.location.sido);
+      } catch (error) {
+        console.log(`이전 채팅방 나가기 중 오류 발생: ${error.message}`);
+      }
+    }
+
+    // 새로운 위치 설정
+    user.location = location;
+    await this.usersRepository.save(user);
+
+    // 새로운 위치의 채팅방에 사용자 참여
+    try {
+      // 채팅방이 없으면 생성
+      let chatRoom;
+      try {
+        chatRoom = await this.chatRoomsService.findOne(location.sido);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          chatRoom = await this.chatRoomsService.createChatRoom(location.sido);
+        }
+      }
+
+      // 사용자를 채팅방에 참여시킴
+      if (chatRoom) {
+        await this.addUserToNewChatRoom(userId, location.sido);
+      }
+    } catch (error) {
+      console.log(`새로운 채팅방 참여 중 오류 발생: ${error.message}`);
+    }
+
+    return location;
   }
 }

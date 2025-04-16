@@ -9,7 +9,6 @@ import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as csv from 'csv-parser';
 import { LocationsEntity } from './entities/location.entity';
-import { Theme } from '../users/entities/user.entity';
 
 @Injectable()
 export class LocationsService implements OnModuleInit {
@@ -150,7 +149,7 @@ export class LocationsService implements OnModuleInit {
     });
 
     if (!compareLocation) {
-      throw new NotFoundException('비교할 위치를 찾을 수 없습니다.');
+      throw new NotFoundException('해당 위치를 찾을 수 없습니다.');
     }
 
     // const userWeather = await this.getWeatherData(userLocation.id);
@@ -160,5 +159,38 @@ export class LocationsService implements OnModuleInit {
       userLocation,
       compareLocation,
     };
+  }
+
+  async findById(id: string): Promise<LocationsEntity> {
+    const location = await this.locationsRepository.findOne({
+      where: { id },
+    });
+    if (!location) {
+      throw new NotFoundException('해당 위치를 찾을 수 없습니다.');
+    }
+    return location;
+  }
+
+  async getDistinctSido(): Promise<string[]> {
+    const result = await this.locationsRepository
+      .createQueryBuilder('location')
+      .select('DISTINCT location.sido', 'sido')
+      .getRawMany();
+
+    return result.map((item) => item.sido);
+  }
+
+  async findBySido(sido: string): Promise<LocationsEntity | null> {
+    return this.locationsRepository.findOne({
+      where: { sido },
+    });
+  }
+
+  async findByKmaRegionCode(
+    kmaRegionCode: string,
+  ): Promise<LocationsEntity | null> {
+    return this.locationsRepository.findOne({
+      where: { kmaRegionCode },
+    });
   }
 }
