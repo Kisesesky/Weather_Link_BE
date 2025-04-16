@@ -25,19 +25,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
-
-    // const userId = this.getUserIdFromClient(client);
-    // if (!userId) {
-    //   console.warn('Unauthorized socket connection');
-    //   client.disconnect();
-    //   return;
-    // }
-
-    // const roomIds = await this.chatRoomsService.getChatRoomIdByUser(userId);
-    // roomIds.forEach((roomId) => {
-    //   client.join(roomId);
-    //   console.log(`[AUTO JOIN] ${client.id} joined room ${roomId}`);
-    // });
   }
 
   handleDisconnect(client: Socket) {
@@ -74,22 +61,4 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('error', '메시지 전송에 실패했습니다.');
     }
   }
-
-  // JWT에서 userId 추출
-  // private getUserIdFromClient(client: Socket): string | null {
-  //   const token = client.handshake.query.token as string;
-
-  //   if (!token) {
-  //     console.warn('No token found in handshake');
-  //     return null;
-  //   }
-
-  //   try {
-  //     const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
-  //     return decoded?.sub || decoded?.id || null;
-  //   } catch (err) {
-  //     console.error('Invalid token:', err.message);
-  //     return null;
-  //   }
-  // }
 }
