@@ -28,22 +28,10 @@ export class UsersService {
   ) {}
 
   async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
-    let profileImageUrl;
-
-    // 소셜 로그인의 경우 (registerType이 EMAIL이 아닌 경우)
-    if (signUpDto.registerType !== RegisterType.EMAIL) {
-      // profileImage가 문자열인 경우 (소셜 로그인)
-      if (typeof signUpDto.profileImage === 'string') {
-        profileImageUrl = signUpDto.profileImage;
-      }
-    }
-    // 일반 회원가입의 경우
-    else if (profileImage) {
-      profileImageUrl = await this.s3Service.uploadImage(
-        profileImage,
-        'profiles',
-      );
-    }
+    const profileImageUrl = await this.getProfileImageUrl(
+      signUpDto,
+      profileImage,
+    );
 
     // 이메일 중복 체크
     const existingUser = await this.usersRepository.findOne({
@@ -70,6 +58,51 @@ export class UsersService {
     await this.usersRepository.save(user);
     const { password, ...rest } = user;
     return rest;
+  }
+
+  async getProfileImageUrl(
+    signUpDto: SignUpDto,
+    profileImage?: Express.Multer.File,
+  ) {
+    const DEFAULT_PROFILE_IMAGE =
+      'https://i.postimg.cc/KzyfwJ6J/profile-default.png';
+
+    // 일반 회원가입
+    if (signUpDto.registerType === RegisterType.EMAIL) {
+      if (profileImage) {
+        try {
+          const url = await this.s3Service.uploadImage(
+            profileImage,
+            'profiles',
+          );
+          return url;
+        } catch (error) {
+          console.error('S3 업로드 실패:', error);
+          return DEFAULT_PROFILE_IMAGE;
+        }
+      }
+      return DEFAULT_PROFILE_IMAGE;
+    }
+
+    // 소셜 로그인 (GOOGLE, KAKAO, NAVER)
+    if (
+      signUpDto.registerType === RegisterType.GOOGLE ||
+      signUpDto.registerType === RegisterType.KAKAO ||
+      signUpDto.registerType === RegisterType.NAVER
+    ) {
+      // 소셜 로그인에서 제공한 프로필 이미지 URL이 있는 경우
+      if (
+        typeof signUpDto.profileImage === 'string' &&
+        signUpDto.profileImage
+      ) {
+        return signUpDto.profileImage;
+      }
+      // 소셜 로그인에서 프로필 이미지를 제공하지 않은 경우
+      return DEFAULT_PROFILE_IMAGE;
+    }
+
+    // 위의 모든 조건에 해당하지 않는 경우 (예상치 못한 경우)
+    return DEFAULT_PROFILE_IMAGE;
   }
 
   async isNameAvailable(name: string) {

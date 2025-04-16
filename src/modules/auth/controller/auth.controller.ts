@@ -32,6 +32,7 @@ import { KakaoAuthGuard } from '../guards/kakao-auth.guard';
 import { NaverAuthGuard } from '../guards/naver-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RegisterType } from '../../users/entities/user.entity';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -49,6 +50,7 @@ export class AuthController {
     @UploadedFile() profileImage?: Express.Multer.File,
   ): Promise<ResponseSignUpDto> {
     try {
+      signUpDto.registerType = RegisterType.EMAIL;
       return await this.authService.signUp(signUpDto, profileImage);
     } catch (error) {
       throw new BadRequestException('회원가입에 실패했습니다.');

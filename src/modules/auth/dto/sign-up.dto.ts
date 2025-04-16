@@ -37,6 +37,7 @@ export class SignUpDto {
     type: 'string',
     format: 'binary',
     description: '프로필 이미지 파일',
+    required: false,
   })
   @IsOptional()
   profileImage?: Express.Multer.File;
