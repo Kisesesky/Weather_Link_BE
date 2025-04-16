@@ -43,6 +43,9 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
         profile._json.profile_image,
       termsAgreed: false,
       locationAgreed: false,
+      sido: '',
+      gugun: '',
+      dong: '',
     });
 
     return newUser;

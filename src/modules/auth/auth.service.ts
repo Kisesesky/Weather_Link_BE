@@ -15,6 +15,7 @@ import { CookieOptions } from 'express';
 import { EmailService } from './email/email.service';
 import { validatePassword } from 'src/utils/password-validator';
 import { LoginLogsService } from '../login-logs/login-logs.service';
+import { LocationsService } from '../locations/service/locations.service';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +25,7 @@ export class AuthService {
     private appConfigService: AppConfigService,
     private emailService: EmailService,
     private loginLogsService: LoginLogsService,
+    private locationsService: LocationsService,
   ) {}
 
   async signUp(
@@ -78,14 +80,29 @@ export class AuthService {
   }
 
   async googleLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 
   async kakaoLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 
   async naverLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 

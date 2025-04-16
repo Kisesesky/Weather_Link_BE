@@ -107,11 +107,15 @@ export class AuthController {
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
+      // 리다이렉트 페이지 생성 시 제거
       return res.json({
         message: '로그인 성공!',
         accessToken,
         refreshToken,
       });
+
+      // 프론트 리다이렉트 페이지 생성 후 (약관 동의, 위치 설정 페이지)
+      // return res.redirect(`${origin}/login/success`);
     } catch (error) {
       throw new BadRequestException('구글 로그인에 실패했습니다.');
     }
@@ -142,11 +146,15 @@ export class AuthController {
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
+      // 리다이렉트 페이지 생성 시 제거
       return res.json({
         message: '로그인 성공!',
         accessToken,
         refreshToken,
       });
+
+      // 프론트 리다이렉트 페이지 생성 후 (약관 동의, 위치 설정 페이지)
+      // return res.redirect(`${origin}/login/success`);
     } catch (error) {
       throw new BadRequestException('카카오 로그인에 실패했습니다.');
     }
@@ -177,11 +185,15 @@ export class AuthController {
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
+      // 리다이렉트 페이지 생성 시 제거
       return res.json({
         message: '로그인 성공!',
         accessToken,
         refreshToken,
       });
+
+      // 프론트 리다이렉트 페이지 생성 후 (약관 동의, 위치 설정 페이지)
+      // return res.redirect(`${origin}/login/success`);
     } catch (error) {
       throw new BadRequestException('네이버 로그인에 실패했습니다.');
     }

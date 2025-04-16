@@ -74,4 +74,25 @@ export class SignUpDto {
   })
   @IsBoolean()
   locationAgreed: boolean;
+
+  @ApiProperty({
+    description: '시/도',
+    example: '서울특별시',
+  })
+  @IsString()
+  sido: string;
+
+  @ApiProperty({
+    description: '구/군',
+    example: '강남구',
+  })
+  @IsString()
+  gugun: string;
+
+  @ApiProperty({
+    description: '동',
+    example: '역삼1동',
+  })
+  @IsString()
+  dong: string;
 }

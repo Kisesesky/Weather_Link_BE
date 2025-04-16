@@ -37,6 +37,9 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
       profileImage: profile.photos?.[0]?.value || profile._json.profile_image,
       termsAgreed: false,
       locationAgreed: false,
+      sido: '',
+      gugun: '',
+      dong: '',
     });
 
     return newUser;

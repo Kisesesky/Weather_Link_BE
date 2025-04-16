@@ -65,11 +65,24 @@ export class UsersService {
         ? (restDto.locationAgreed as string).toLowerCase() === 'true'
         : !!restDto.locationAgreed;
 
+    // 위치 정보 찾기
+    const location = await this.locationsService.findBySidoGugunDong(
+      restDto.sido,
+      restDto.gugun,
+      restDto.dong,
+    );
+
+    if (!location) {
+      throw new BadRequestException('존재하지 않는 위치 정보입니다.');
+    }
+
+    // 사용자 생성
     const user = this.usersRepository.create({
       ...restDto,
       profileImage: profileImageUrl,
       termsAgreed,
       locationAgreed,
+      location,
     });
 
     await this.usersRepository.save(user);

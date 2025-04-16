@@ -44,6 +44,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       profileImage: profile._json.picture || '',
       termsAgreed: false,
       locationAgreed: false,
+      sido: '',
+      gugun: '',
+      dong: '',
     });
 
     done(null, newUser);
