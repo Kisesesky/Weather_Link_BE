@@ -73,4 +73,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Message, (message) => message.sender)
   messages: Message[];
+
+  @Column()
+  termsAgreed: boolean;
+
+  @Column()
+  locationAgreed: boolean;
 }

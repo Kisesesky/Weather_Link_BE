@@ -30,11 +30,13 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
 
     // 네이버 프로필 구조
     const newUser = await this.usersService.createUser({
-      email: profile.emails?.[0]?.value || profile._json.email, // 이메일
+      email: profile.emails?.[0]?.value || profile._json.email,
       socialId: profile.id,
-      name: profile.displayName || profile._json.name || profile.username, // 이름
+      name: profile.displayName || profile._json.name,
       registerType: RegisterType.NAVER,
-      profileImage: profile.photos?.[0]?.value || profile._json.profile_image, // 프로필 이미지
+      profileImage: profile.photos?.[0]?.value || profile._json.profile_image,
+      termsAgreed: false,
+      locationAgreed: false,
     });
 
     return newUser;

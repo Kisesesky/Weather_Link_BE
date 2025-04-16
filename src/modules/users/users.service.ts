@@ -15,6 +15,7 @@ import { UpdateThemeDto } from './dto/update-theme.dto';
 import { S3Service } from '../s3/s3.service';
 import { LocationsService } from '../locations/service/locations.service';
 import { ChatRoomsService } from '../chat/service/chatRoom.service';
+import { ResponseSignUpDto } from '../auth/dto/response-sign-up.dto';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +28,10 @@ export class UsersService {
     private chatRoomsService: ChatRoomsService,
   ) {}
 
-  async createUser(signUpDto: SignUpDto, profileImage?: Express.Multer.File) {
+  async createUser(
+    signUpDto: SignUpDto,
+    profileImage?: Express.Multer.File,
+  ): Promise<ResponseSignUpDto> {
     const profileImageUrl = await this.getProfileImageUrl(
       signUpDto,
       profileImage,
@@ -50,9 +54,22 @@ export class UsersService {
     // profileImage 필드를 제외한 나머지 필드로 객체 생성
     const { profileImage: _, ...restDto } = signUpDto;
 
+    // 약관 동의 값을 boolean으로 변환
+    const termsAgreed =
+      typeof restDto.termsAgreed === 'string'
+        ? (restDto.termsAgreed as string).toLowerCase() === 'true'
+        : !!restDto.termsAgreed;
+
+    const locationAgreed =
+      typeof restDto.locationAgreed === 'string'
+        ? (restDto.locationAgreed as string).toLowerCase() === 'true'
+        : !!restDto.locationAgreed;
+
     const user = this.usersRepository.create({
       ...restDto,
       profileImage: profileImageUrl,
+      termsAgreed,
+      locationAgreed,
     });
 
     await this.usersRepository.save(user);
@@ -184,6 +201,13 @@ export class UsersService {
 
     // 프로필 이미지 업로드 처리
     if (profileImage) {
+      // 기존 프로필 이미지가 있고 기본 이미지가 아닌 경우 삭제
+      if (
+        user.profileImage &&
+        !user.profileImage.includes('profile-default.png')
+      ) {
+        await this.s3Service.deleteImage(user.profileImage);
+      }
       user.profileImage = await this.s3Service.uploadImage(
         profileImage,
         'profiles',

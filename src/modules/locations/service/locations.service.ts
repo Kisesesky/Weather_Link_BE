@@ -205,4 +205,18 @@ export class LocationsService implements OnModuleInit {
       where: { kmaRegionCode },
     });
   }
+
+  async findBySidoGugunDong(
+    sido: string,
+    gugun: string,
+    dong: string,
+  ): Promise<LocationsEntity | null> {
+    return this.locationsRepository.findOne({
+      where: {
+        sido,
+        gugun,
+        dong,
+      },
+    });
+  }
 }

@@ -30,6 +30,15 @@ export class AuthService {
     signUpDto: SignUpDto,
     profileImage?: Express.Multer.File,
   ): Promise<ResponseSignUpDto> {
+    // 약관 동의 검증 (swagger boolean값 문자열로 전달됨)
+    if (
+      String(signUpDto.termsAgreed) !== 'true' ||
+      String(signUpDto.locationAgreed) !== 'true'
+    ) {
+      throw new BadRequestException('약관 동의가 필요합니다.');
+    }
+
+    // 닉네임 중복 검증
     const isNameAvailable = await this.usersService.isNameAvailable(
       signUpDto.name,
     );
@@ -41,6 +50,7 @@ export class AuthService {
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
     }
+
     return this.usersService.createUser(signUpDto, profileImage);
   }
 

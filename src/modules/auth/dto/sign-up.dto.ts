@@ -7,6 +7,7 @@ import {
   IsStrongPassword,
   MaxLength,
   Matches,
+  IsBoolean,
 } from 'class-validator';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
 import { LocationsEntity } from './../../locations/entities/location.entity';
@@ -57,4 +58,20 @@ export class SignUpDto {
 
   @IsEnum(RegisterType)
   registerType: RegisterType;
+
+  @ApiProperty({
+    type: Boolean,
+    description: '서비스 이용 약관 동의',
+    required: true,
+  })
+  @IsBoolean()
+  termsAgreed: boolean;
+
+  @ApiProperty({
+    type: Boolean,
+    description: '위치정보 수집 동의',
+    required: true,
+  })
+  @IsBoolean()
+  locationAgreed: boolean;
 }
