@@ -5,14 +5,13 @@ import { LocationsEntity } from '../entities/location.entity';
 import { RegIdMapping, RegionInfo } from '../interface/region.interface';
 import { SIDO_NAME_MAP, REGION_MAPPINGS } from '../utils/region-map';
 
-
 @Injectable()
 export class RegionService {
   private readonly logger = new Logger(RegionService.name);
 
   constructor(
     @InjectRepository(LocationsEntity)
-    private locationRepository: Repository<LocationsEntity>
+    private locationRepository: Repository<LocationsEntity>,
   ) {}
 
   // 시도 이름 정규화 (DB의 공식 이름 -> 짧은 이름) '시', '도' 등의 접미사 제거
@@ -23,7 +22,10 @@ export class RegionService {
       }
     }
 
-    const cleanedSido = sido.replace(/(시|도|특별시|광역시|특별자치시|특별자치도)$/, '');
+    const cleanedSido = sido.replace(
+      /(시|도|특별시|광역시|특별자치시|특별자치도)$/,
+      '',
+    );
     return cleanedSido;
   }
 
@@ -36,13 +38,15 @@ export class RegionService {
   findRegId(sido: string, gugun: string): string | undefined {
     const normalizedSido = this.normalizeSido(sido);
     const normalizedGugun = this.normalizeGugun(gugun);
-    
+
     // 각 regId 매핑을 확인
     for (const mapping of REGION_MAPPINGS) {
       for (const region of mapping.regions) {
         if (region.sido === normalizedSido) {
           if (region.guguns) {
-            const normalizedGuguns = region.guguns.map(g => this.normalizeGugun(g));
+            const normalizedGuguns = region.guguns.map((g) =>
+              this.normalizeGugun(g),
+            );
             if (normalizedGuguns.includes(normalizedGugun)) {
               return mapping.regId;
             }
@@ -52,7 +56,9 @@ export class RegionService {
         }
       }
     }
-    this.logger.warn(`regId를 찾을 수 없습니다. 시/도: ${normalizedSido}, 구/군: ${normalizedGugun}`);
+    this.logger.warn(
+      `regId를 찾을 수 없습니다. 시/도: ${normalizedSido}, 구/군: ${normalizedGugun}`,
+    );
     return undefined;
   }
 
@@ -61,10 +67,10 @@ export class RegionService {
     const query = this.locationRepository
       .createQueryBuilder('location')
       .select('DISTINCT location.level1', 'sido');
-    
+
     const sidos = await query.getRawMany();
-    
-    return sidos.map(s => s.sido);
+
+    return sidos.map((s) => s.sido);
   }
 
   // 특정 시도의 구군 목록 조회
@@ -75,8 +81,8 @@ export class RegionService {
       .where('location.level1 = :sido', { sido });
 
     const guguns = await query.getRawMany();
-    const result = guguns.map(g => g.gugun).filter(Boolean);
-    
+    const result = guguns.map((g) => g.gugun).filter(Boolean);
+
     return result;
   }
 

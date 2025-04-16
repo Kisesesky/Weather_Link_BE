@@ -1,8 +1,10 @@
-import { Entity, Column, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, Column, OneToMany, ManyToOne, ManyToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { LoginLog } from 'src/modules/login-logs/entities/login-log.entity';
 import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 import { Friend } from 'src/modules/friends/entities/friend.entity';
+import { ChatRoom } from 'src/modules/chat/entities/chatRoom.entity';
+import { Message } from 'src/modules/chat/entities/message.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
@@ -65,4 +67,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Friend, (friend) => friend.receiver)
   receivedRequests: Friend[];
+
+  @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants)
+  chatRooms: ChatRoom[];
+
+  @OneToMany(() => Message, (message) => message.sender)
+  messages: Message[];
 }

@@ -1,10 +1,10 @@
 export interface RegionInfo {
-    sido: string;
-    guguns: string[];
-  }
-  
+  sido: string;
+  guguns: string[];
+}
+
 export interface RegIdMapping {
-    regId: string;
-    sido: string;
-    gugun: string;
-  }
+  regId: string;
+  sido: string;
+  gugun: string;
+}

@@ -45,8 +45,15 @@ export class LocationsService implements OnModuleInit {
           const stationCode = row['지점소']?.trim();
           const forecastCode = row['예보구역코드']?.trim();
           const forecastStationCode = row['지점번호']?.trim();
-          
-          if (!kmaRegionCode || !alertRegionCode || !stationCode || !forecastCode || !forecastStationCode) return;
+
+          if (
+            !kmaRegionCode ||
+            !alertRegionCode ||
+            !stationCode ||
+            !forecastCode ||
+            !forecastStationCode
+          )
+            return;
 
           const nx = parseInt(row['격자 X'], 10);
           const ny = parseInt(row['격자 Y'], 10);
@@ -154,7 +161,7 @@ export class LocationsService implements OnModuleInit {
     });
 
     if (!compareLocation) {
-      throw new NotFoundException('비교할 위치를 찾을 수 없습니다.');
+      throw new NotFoundException('해당 위치를 찾을 수 없습니다.');
     }
 
     // const userWeather = await this.getWeatherData(userLocation.id);
@@ -164,5 +171,38 @@ export class LocationsService implements OnModuleInit {
       userLocation,
       compareLocation,
     };
+  }
+
+  async findById(id: string): Promise<LocationsEntity> {
+    const location = await this.locationsRepository.findOne({
+      where: { id },
+    });
+    if (!location) {
+      throw new NotFoundException('해당 위치를 찾을 수 없습니다.');
+    }
+    return location;
+  }
+
+  async getDistinctSido(): Promise<string[]> {
+    const result = await this.locationsRepository
+      .createQueryBuilder('location')
+      .select('DISTINCT location.sido', 'sido')
+      .getRawMany();
+
+    return result.map((item) => item.sido);
+  }
+
+  async findBySido(sido: string): Promise<LocationsEntity | null> {
+    return this.locationsRepository.findOne({
+      where: { sido },
+    });
+  }
+
+  async findByKmaRegionCode(
+    kmaRegionCode: string,
+  ): Promise<LocationsEntity | null> {
+    return this.locationsRepository.findOne({
+      where: { kmaRegionCode },
+    });
   }
 }

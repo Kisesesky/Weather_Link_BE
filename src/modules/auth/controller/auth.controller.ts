@@ -8,6 +8,7 @@ import {
   Get,
   UploadedFile,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -47,7 +48,11 @@ export class AuthController {
     @Body() signUpDto: SignUpDto,
     @UploadedFile() profileImage?: Express.Multer.File,
   ): Promise<ResponseSignUpDto> {
-    return this.authService.signUp(signUpDto, profileImage);
+    try {
+      return await this.authService.signUp(signUpDto, profileImage);
+    } catch (error) {
+      throw new BadRequestException('회원가입에 실패했습니다.');
+    }
   }
 
   @ApiOperation({ summary: '로그인' })
@@ -58,17 +63,21 @@ export class AuthController {
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
-    const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      await this.authService.logIn(logInDto, origin);
+    try {
+      const { accessToken, refreshToken, accessOptions, refreshOptions } =
+        await this.authService.logIn(logInDto, origin);
 
-    res.cookie('Authentication', accessToken, accessOptions);
-    res.cookie('Refresh', refreshToken, refreshOptions);
+      res.cookie('Authentication', accessToken, accessOptions);
+      res.cookie('Refresh', refreshToken, refreshOptions);
 
-    return res.json({
-      message: '로그인 성공!',
-      accessToken,
-      refreshToken,
-    });
+      return res.json({
+        message: '로그인 성공!',
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      throw new BadRequestException('로그인에 실패했습니다.');
+    }
   }
 
   @Get('google')
@@ -89,17 +98,21 @@ export class AuthController {
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
-    const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      await this.authService.googleLogin(user.email, origin);
+    try {
+      const { accessToken, refreshToken, accessOptions, refreshOptions } =
+        await this.authService.googleLogin(user.email, origin);
 
-    res.cookie('Authentication', accessToken, accessOptions);
-    res.cookie('Refresh', refreshToken, refreshOptions);
+      res.cookie('Authentication', accessToken, accessOptions);
+      res.cookie('Refresh', refreshToken, refreshOptions);
 
-    return res.json({
-      message: '로그인 성공!',
-      accessToken,
-      refreshToken,
-    });
+      return res.json({
+        message: '로그인 성공!',
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      throw new BadRequestException('구글 로그인에 실패했습니다.');
+    }
   }
 
   @Get('kakao')
@@ -120,17 +133,21 @@ export class AuthController {
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
-    const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      await this.authService.kakaoLogin(user.email, origin);
+    try {
+      const { accessToken, refreshToken, accessOptions, refreshOptions } =
+        await this.authService.kakaoLogin(user.email, origin);
 
-    res.cookie('Authentication', accessToken, accessOptions);
-    res.cookie('Refresh', refreshToken, refreshOptions);
+      res.cookie('Authentication', accessToken, accessOptions);
+      res.cookie('Refresh', refreshToken, refreshOptions);
 
-    return res.json({
-      message: '로그인 성공!',
-      accessToken,
-      refreshToken,
-    });
+      return res.json({
+        message: '로그인 성공!',
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      throw new BadRequestException('카카오 로그인에 실패했습니다.');
+    }
   }
 
   @Get('naver')
@@ -151,17 +168,21 @@ export class AuthController {
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
-    const { accessToken, refreshToken, accessOptions, refreshOptions } =
-      await this.authService.naverLogin(user.email, origin);
+    try {
+      const { accessToken, refreshToken, accessOptions, refreshOptions } =
+        await this.authService.naverLogin(user.email, origin);
 
-    res.cookie('Authentication', accessToken, accessOptions);
-    res.cookie('Refresh', refreshToken, refreshOptions);
+      res.cookie('Authentication', accessToken, accessOptions);
+      res.cookie('Refresh', refreshToken, refreshOptions);
 
-    return res.json({
-      message: '로그인 성공!',
-      accessToken,
-      refreshToken,
-    });
+      return res.json({
+        message: '로그인 성공!',
+        accessToken,
+        refreshToken,
+      });
+    } catch (error) {
+      throw new BadRequestException('네이버 로그인에 실패했습니다.');
+    }
   }
 
   @ApiOperation({ summary: '로그아웃' })
