@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as csv from 'csv-parser';
-import { LocationsEntity } from './entities/location.entity';
+import { LocationsEntity } from '../entities/location.entity';
 
 @Injectable()
 export class LocationsService implements OnModuleInit {
@@ -43,7 +43,17 @@ export class LocationsService implements OnModuleInit {
           const kmaRegionCode = row['기상청행정구역코드']?.trim();
           const alertRegionCode = row['특보구역코드']?.trim();
           const stationCode = row['지점소']?.trim();
-          if (!kmaRegionCode || !alertRegionCode || !stationCode) return;
+          const forecastCode = row['예보구역코드']?.trim();
+          const forecastStationCode = row['지점번호']?.trim();
+
+          if (
+            !kmaRegionCode ||
+            !alertRegionCode ||
+            !stationCode ||
+            !forecastCode ||
+            !forecastStationCode
+          )
+            return;
 
           const nx = parseInt(row['격자 X'], 10);
           const ny = parseInt(row['격자 Y'], 10);
@@ -55,6 +65,8 @@ export class LocationsService implements OnModuleInit {
               kmaRegionCode,
               alertRegionCode,
               stationCode,
+              forecastCode,
+              forecastStationCode,
               sido: row['1단계']?.trim(),
               gugun: row['2단계']?.trim() || undefined,
               dong: row['3단계']?.trim() || undefined,

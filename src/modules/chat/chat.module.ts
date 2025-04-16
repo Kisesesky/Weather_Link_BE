@@ -13,8 +13,8 @@ import { ChatController } from './chat.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([ChatRoom, Message, User]),
-    forwardRef(() => UsersModule),
     LocationsModule,
+    forwardRef(() => UsersModule),
   ],
   controllers: [ChatController],
   providers: [ChatGateway, MessagesService, ChatRoomsService],

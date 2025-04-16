@@ -7,7 +7,7 @@ import {
 import { ChatRoom } from '../entities/chatRoom.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { LocationsService } from 'src/modules/locations/locations.service';
+import { LocationsService } from 'src/modules/locations/service/locations.service';
 import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()

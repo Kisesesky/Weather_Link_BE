@@ -3,6 +3,8 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RegisterType, User, Theme } from './entities/user.entity';
@@ -11,7 +13,7 @@ import { SignUpDto } from '../auth/dto/sign-up.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { S3Service } from '../s3/s3.service';
-import { LocationsService } from '../locations/locations.service';
+import { LocationsService } from '../locations/service/locations.service';
 import { ChatRoomsService } from '../chat/service/chatRoom.service';
 
 @Injectable()
@@ -21,6 +23,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
     private s3Service: S3Service,
     private locationsService: LocationsService,
+    @Inject(forwardRef(() => ChatRoomsService))
     private chatRoomsService: ChatRoomsService,
   ) {}
 

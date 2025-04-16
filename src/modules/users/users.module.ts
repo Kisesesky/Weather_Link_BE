@@ -10,9 +10,9 @@ import { ChatModule } from '../chat/chat.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
+    forwardRef(() => ChatModule),
     S3Module,
     LocationsModule,
-    forwardRef(() => ChatModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],
