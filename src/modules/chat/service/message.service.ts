@@ -49,11 +49,34 @@ export class MessagesService {
     return await this.messagesRepository.save(message);
   }
 
-  async getMessages(roomId: string) {
-    return this.messagesRepository.find({
-      where: { chatRoom: { id: roomId } },
-      relations: ['sender'],
-      order: { createdAt: 'DESC' },
-    });
+  async getMessages(roomId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [messages, total] = await this.messagesRepository
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.sender', 'sender')
+      .where('message.chatRoom.id = :roomId', { roomId })
+      .orderBy('message.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .select([
+        'message.id',
+        'message.content',
+        'message.createdAt',
+        'sender.id',
+        'sender.name',
+        'sender.profileImage',
+      ])
+      .getManyAndCount();
+
+    return {
+      messages,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

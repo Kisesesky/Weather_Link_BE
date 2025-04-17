@@ -127,22 +127,44 @@ export class ChatRoomsService {
     }
 
     // 해당 Location ID로 채팅방 찾기
-    const room = await this.chatRoomsRepository.findOne({
-      where: { location: { id: targetLocation.id } },
-      relations: ['messages', 'messages.sender'],
-    });
+    const room = await this.chatRoomsRepository
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.messages', 'message')
+      .leftJoinAndSelect('message.sender', 'sender')
+      .where('room.location.id = :locationId', {
+        locationId: targetLocation.id,
+      })
+      .orderBy('message.createdAt', 'DESC')
+      .select([
+        'room.id',
+        'room.name',
+        'message.id',
+        'message.content',
+        'message.createdAt',
+        'sender.id',
+        'sender.name',
+        'sender.profileImage',
+      ])
+      .getOne();
 
     if (!room) {
       throw new NotFoundException('해당 지역의 채팅방을 찾을 수 없습니다.');
     }
 
-    // 최신 메시지 2개 조회
-    const latestMessages = room.messages
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 2);
+    // 참여자 수 조회
+    const participantCount = await this.chatRoomsRepository
+      .createQueryBuilder('room')
+      .leftJoin('room.participants', 'participant')
+      .where('room.id = :roomId', { roomId: room.id })
+      .getCount();
+
+    // 최신 메시지 2개만 선택
+    const latestMessages = room.messages.slice(0, 2);
 
     return {
-      ...room,
+      id: room.id,
+      name: room.name,
+      participantCount,
       messages: latestMessages,
     };
   }

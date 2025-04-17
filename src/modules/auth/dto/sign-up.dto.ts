@@ -7,6 +7,7 @@ import {
   IsStrongPassword,
   MaxLength,
   Matches,
+  IsBoolean,
 } from 'class-validator';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
 import { LocationsEntity } from './../../locations/entities/location.entity';
@@ -37,6 +38,7 @@ export class SignUpDto {
     type: 'string',
     format: 'binary',
     description: '프로필 이미지 파일',
+    required: false,
   })
   @IsOptional()
   profileImage?: Express.Multer.File;
@@ -56,4 +58,41 @@ export class SignUpDto {
 
   @IsEnum(RegisterType)
   registerType: RegisterType;
+
+  @ApiProperty({
+    type: Boolean,
+    description: '서비스 이용 약관 동의',
+    required: true,
+  })
+  @IsBoolean()
+  termsAgreed: boolean;
+
+  @ApiProperty({
+    type: Boolean,
+    description: '위치정보 수집 동의',
+    required: true,
+  })
+  @IsBoolean()
+  locationAgreed: boolean;
+
+  @ApiProperty({
+    description: '시/도',
+    example: '서울특별시',
+  })
+  @IsString()
+  sido: string;
+
+  @ApiProperty({
+    description: '구/군',
+    example: '강남구',
+  })
+  @IsString()
+  gugun: string;
+
+  @ApiProperty({
+    description: '동',
+    example: '역삼1동',
+  })
+  @IsString()
+  dong: string;
 }

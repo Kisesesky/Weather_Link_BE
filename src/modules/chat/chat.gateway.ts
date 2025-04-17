@@ -50,11 +50,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     try {
       // 1. 메시지 DB에 저장
-      const savedmessage =
+      const savedMessage =
         await this.messagesService.saveMessage(createMessageDto);
 
-      // 2. 같은 roomId를 가진 사용자들에게 메시지 전송
-      this.server.to(createMessageDto.roomId).emit('newMessage', savedmessage);
+      // 2. 응답 데이터 간소화
+      const simplifiedMessage = {
+        id: savedMessage.id,
+        content: savedMessage.content,
+        createdAt: savedMessage.createdAt,
+        sender: {
+          id: savedMessage.sender.id,
+          name: savedMessage.sender.name,
+          profileImage: savedMessage.sender.profileImage,
+        },
+      };
+
+      // 3. 같은 roomId를 가진 사용자들에게 메시지 전송
+      this.server
+        .to(createMessageDto.roomId)
+        .emit('newMessage', simplifiedMessage);
       console.log(`[SEND] Broadcasting to room: ${createMessageDto.roomId}`);
     } catch (error) {
       console.error('Error sending message:', error);

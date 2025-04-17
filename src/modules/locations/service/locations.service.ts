@@ -205,4 +205,30 @@ export class LocationsService implements OnModuleInit {
       where: { kmaRegionCode },
     });
   }
+
+  async findBySidoGugunDong(
+    sido: string,
+    gugun: string,
+    dong: string,
+  ): Promise<LocationsEntity | null> {
+    this.logger.debug(`위치 정보 조회: ${sido} ${gugun} ${dong}`);
+
+    const location = await this.locationsRepository.findOne({
+      where: {
+        sido,
+        gugun,
+        dong,
+      },
+    });
+
+    if (!location) {
+      this.logger.warn(
+        `위치 정보를 찾을 수 없습니다: ${sido} ${gugun} ${dong}`,
+      );
+    } else {
+      this.logger.debug(`위치 정보를 찾았습니다: ${location.id}`);
+    }
+
+    return location;
+  }
 }

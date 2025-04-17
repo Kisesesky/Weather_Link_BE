@@ -15,6 +15,8 @@ import { CookieOptions } from 'express';
 import { EmailService } from './email/email.service';
 import { validatePassword } from 'src/utils/password-validator';
 import { LoginLogsService } from '../login-logs/login-logs.service';
+import { LocationsService } from '../locations/service/locations.service';
+import { SocialSignupDto } from './dto/social-sign-up.dto';
 
 @Injectable()
 export class AuthService {
@@ -24,12 +26,22 @@ export class AuthService {
     private appConfigService: AppConfigService,
     private emailService: EmailService,
     private loginLogsService: LoginLogsService,
+    private locationsService: LocationsService,
   ) {}
 
   async signUp(
     signUpDto: SignUpDto,
     profileImage?: Express.Multer.File,
   ): Promise<ResponseSignUpDto> {
+    // 약관 동의 검증 (swagger boolean값 문자열로 전달됨)
+    if (
+      String(signUpDto.termsAgreed) !== 'true' ||
+      String(signUpDto.locationAgreed) !== 'true'
+    ) {
+      throw new BadRequestException('약관 동의가 필요합니다.');
+    }
+
+    // 닉네임 중복 검증
     const isNameAvailable = await this.usersService.isNameAvailable(
       signUpDto.name,
     );
@@ -41,6 +53,7 @@ export class AuthService {
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
     }
+
     return this.usersService.createUser(signUpDto, profileImage);
   }
 
@@ -68,14 +81,29 @@ export class AuthService {
   }
 
   async googleLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 
   async kakaoLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 
   async naverLogin(email: string, origin: string) {
+    const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      // 아직 가입되지 않은 사용자
+      throw new UnauthorizedException('추가 약관 동의가 필요합니다.');
+    }
     return this.logAndMakeToken(email, origin);
   }
 
@@ -238,5 +266,66 @@ export class AuthService {
     await this.usersService.updatePassword(email, hashedPassword);
 
     return { message: '비밀번호가 성공적으로 변경되었습니다.' };
+  }
+
+  async SocialSignup(userId: string, socialSignupDto: SocialSignupDto) {
+    // 약관 동의 검증
+    if (!socialSignupDto.termsAgreed || !socialSignupDto.locationAgreed) {
+      throw new BadRequestException('약관 동의가 필요합니다.');
+    }
+
+    // 위치 정보 찾기 (테스트용 임시 하드코딩)
+    const sido = '서울특별시';
+    const gugun = '강남구';
+    const dong = '역삼1동';
+
+    console.log('위치 정보 조회:', { sido, gugun, dong });
+
+    const location = await this.locationsService.findBySidoGugunDong(
+      // completeSocialSignupDto.sido,
+      // completeSocialSignupDto.gugun,
+      // completeSocialSignupDto.dong,
+      sido,
+      gugun,
+      dong,
+    );
+
+    if (!location) {
+      throw new BadRequestException('존재하지 않는 위치 정보입니다.');
+    }
+
+    // 사용자 정보 업데이트
+    const updatedUser = await this.usersService.completeSocialSignup(
+      userId,
+      socialSignupDto,
+      location,
+    );
+
+    // 약관 동의와 위치 설정이 완료된 사용자인지 확인
+    if (
+      !updatedUser.termsAgreed ||
+      !updatedUser.locationAgreed ||
+      !updatedUser.location
+    ) {
+      throw new BadRequestException('약관 동의와 위치 설정이 필요합니다.');
+    }
+
+    return updatedUser;
+  }
+
+  // 임시 토큰 생성 메서드 (소셜 로그인 콜백에서 사용)
+  createTemporaryToken(email: string, origin: string) {
+    const payload = { sub: email, isTemporary: true };
+    const maxAge = 30 * 60 * 1000; // 30분
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge,
+    });
+
+    return {
+      accessToken,
+      accessOptions: this.setCookieOption(maxAge, origin),
+    };
   }
 }

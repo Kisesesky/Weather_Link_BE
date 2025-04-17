@@ -32,6 +32,8 @@ import { KakaoAuthGuard } from '../guards/kakao-auth.guard';
 import { NaverAuthGuard } from '../guards/naver-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RegisterType } from '../../users/entities/user.entity';
+import { SocialSignupDto } from '../dto/social-sign-up.dto';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -49,6 +51,7 @@ export class AuthController {
     @UploadedFile() profileImage?: Express.Multer.File,
   ): Promise<ResponseSignUpDto> {
     try {
+      signUpDto.registerType = RegisterType.EMAIL;
       return await this.authService.signUp(signUpDto, profileImage);
     } catch (error) {
       throw new BadRequestException('회원가입에 실패했습니다.');
@@ -99,17 +102,15 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      const { accessToken, refreshToken, accessOptions, refreshOptions } =
-        await this.authService.googleLogin(user.email, origin);
+      // 임시 토큰 생성
+      const { accessToken, accessOptions } =
+        await this.authService.createTemporaryToken(user.email, origin);
 
+      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
-      res.cookie('Refresh', refreshToken, refreshOptions);
 
-      return res.json({
-        message: '로그인 성공!',
-        accessToken,
-        refreshToken,
-      });
+      // 추가 정보 입력 페이지로 리다이렉트
+      return res.redirect(`${origin}/signup/social/complete`);
     } catch (error) {
       throw new BadRequestException('구글 로그인에 실패했습니다.');
     }
@@ -134,19 +135,17 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      const { accessToken, refreshToken, accessOptions, refreshOptions } =
-        await this.authService.kakaoLogin(user.email, origin);
+      // 임시 토큰 생성
+      const { accessToken, accessOptions } =
+        await this.authService.createTemporaryToken(user.email, origin);
 
+      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
-      res.cookie('Refresh', refreshToken, refreshOptions);
 
-      return res.json({
-        message: '로그인 성공!',
-        accessToken,
-        refreshToken,
-      });
+      // 추가 정보 입력 페이지로 리다이렉트
+      return res.redirect(`${origin}/signup/social/complete`);
     } catch (error) {
-      throw new BadRequestException('카카오 로그인에 실패했습니다.');
+      throw new BadRequestException('구글 로그인에 실패했습니다.');
     }
   }
 
@@ -169,19 +168,52 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      const { accessToken, refreshToken, accessOptions, refreshOptions } =
-        await this.authService.naverLogin(user.email, origin);
+      // 임시 토큰 생성
+      const { accessToken, accessOptions } =
+        await this.authService.createTemporaryToken(user.email, origin);
 
+      // 쿠키 설정
+      res.cookie('Authentication', accessToken, accessOptions);
+
+      // 추가 정보 입력 페이지로 리다이렉트
+      return res.redirect(`${origin}/signup/social/complete`);
+    } catch (error) {
+      throw new BadRequestException('구글 로그인에 실패했습니다.');
+    }
+  }
+
+  @Post('social/complete')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '소셜 로그인 추가 정보 입력 완료' })
+  @ApiResponse({
+    status: 200,
+    description: '소셜 로그인 추가 정보 입력 완료',
+  })
+  async completeSocialSignup(
+    @RequestUser() user: User,
+    @Body() socialSignupDto: SocialSignupDto,
+    @RequestOrigin() origin: string,
+    @Res() res: Response,
+  ) {
+    try {
+      // 추가 정보로 사용자 정보 업데이트
+      const completedUser = await this.authService.SocialSignup(
+        user.id,
+        socialSignupDto,
+      );
+
+      // 새로운 토큰 발급
+      const { accessToken, refreshToken, accessOptions, refreshOptions } =
+        await this.authService.makeJwtToken(completedUser.email, origin);
+
+      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
-      return res.json({
-        message: '로그인 성공!',
-        accessToken,
-        refreshToken,
-      });
+      // 프론트엔드 메인 페이지로 리다이렉트
+      return res.redirect(`${origin}/main`);
     } catch (error) {
-      throw new BadRequestException('네이버 로그인에 실패했습니다.');
+      throw new BadRequestException('추가 정보 입력에 실패했습니다.');
     }
   }
 

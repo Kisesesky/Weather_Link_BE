@@ -1,4 +1,6 @@
-import { IsDate, IsString } from 'class-validator';
+import { IsDate, IsString, IsEnum } from 'class-validator';
+import { RegisterType } from 'src/modules/users/entities/user.entity';
+import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 
 export class ResponseSignUpDto {
   @IsString()
@@ -13,9 +15,14 @@ export class ResponseSignUpDto {
   @IsString()
   theme: string;
 
+  @IsEnum(RegisterType)
+  registerType: RegisterType;
+
   @IsDate()
   createdAt: Date;
 
   @IsDate()
   updatedAt: Date;
+
+  location: LocationsEntity;
 }
