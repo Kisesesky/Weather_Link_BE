@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -61,9 +61,34 @@ export class ChatController {
   @ApiResponse({
     status: 200,
     description: '채팅방의 메시지 목록을 반환합니다.',
-    type: [Message],
+    schema: {
+      example: {
+        messages: [
+          {
+            id: 'message-id',
+            content: '메시지 내용',
+            createdAt: '2024-03-15T12:00:00.000Z',
+            sender: {
+              id: 'user-id',
+              name: '사용자 이름',
+              profileImage: '프로필 이미지 URL',
+            },
+          },
+        ],
+        meta: {
+          total: 100,
+          page: 1,
+          limit: 20,
+          totalPages: 5,
+        },
+      },
+    },
   })
-  async getMessages(@Param('roomId') roomId: string): Promise<Message[]> {
-    return this.messagesService.getMessages(roomId);
+  async getMessages(
+    @Param('roomId') roomId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.messagesService.getMessages(roomId, page, limit);
   }
 }

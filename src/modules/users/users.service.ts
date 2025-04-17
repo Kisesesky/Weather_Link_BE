@@ -88,6 +88,27 @@ export class UsersService {
     });
 
     await this.usersRepository.save(user);
+
+    // 새로운 위치의 채팅방에 사용자 참여
+    try {
+      // 채팅방이 없으면 생성
+      let chatRoom;
+      try {
+        chatRoom = await this.chatRoomsService.findOne(location.sido);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          chatRoom = await this.chatRoomsService.createChatRoom(location.sido);
+        }
+      }
+
+      // 사용자를 채팅방에 참여시킴
+      if (chatRoom) {
+        await this.addUserToNewChatRoom(user.id, location.sido);
+      }
+    } catch (error) {
+      console.log(`새로운 채팅방 참여 중 오류 발생: ${error.message}`);
+    }
+
     const { password, ...rest } = user;
     return rest;
   }
@@ -426,6 +447,27 @@ export class UsersService {
     user.location = location;
 
     const updatedUser = await this.usersRepository.save(user);
+
+    // 새로운 위치의 채팅방에 사용자 참여
+    try {
+      // 채팅방이 없으면 생성
+      let chatRoom;
+      try {
+        chatRoom = await this.chatRoomsService.findOne(location.sido);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          chatRoom = await this.chatRoomsService.createChatRoom(location.sido);
+        }
+      }
+
+      // 사용자를 채팅방에 참여시킴
+      if (chatRoom) {
+        await this.addUserToNewChatRoom(updatedUser.id, location.sido);
+      }
+    } catch (error) {
+      console.log(`새로운 채팅방 참여 중 오류 발생: ${error.message}`);
+    }
+
     const { password, ...rest } = updatedUser;
     return rest;
   }
