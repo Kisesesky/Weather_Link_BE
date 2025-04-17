@@ -11,6 +11,7 @@ import { FriendsModule } from './modules/friends/friends.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoginLogsModule } from './modules/login-logs/login-logs.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LoginLogsModule } from './modules/login-logs/login-logs.module';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot(AppDataSource.options),
+    ScheduleModule.forRoot(),
     UsersModule,
     AuthModule,
     LoginLogsModule,
