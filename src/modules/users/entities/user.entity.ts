@@ -81,4 +81,7 @@ export class User extends BaseEntity {
 
   @Column()
   locationAgreed: boolean;
+
+  @Column({ default: true })
+  alertsEnabled: boolean;
 }

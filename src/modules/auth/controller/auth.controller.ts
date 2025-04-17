@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -79,7 +80,12 @@ export class AuthController {
         refreshToken,
       });
     } catch (error) {
-      throw new BadRequestException('로그인에 실패했습니다.');
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException(
+          '이메일 또는 패스워드가 잘못 되었습니다.',
+        );
+      }
+      throw new BadRequestException('로그인 처리 중 오류가 발생했습니다.');
     }
   }
 
