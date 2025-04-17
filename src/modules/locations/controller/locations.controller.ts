@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
-import { LocationsService } from './service/locations.service';
 import * as path from 'path';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { LocationsService } from '../service/locations.service';
 
 @ApiTags('위치 정보')
 @Controller('locations')
@@ -65,28 +65,28 @@ export class LocationController {
     return this.locationsService.getDongList(sido, gugun);
   }
 
-  @ApiOperation({ summary: '위치 ID 조회' })
-  @ApiQuery({
-    name: 'sido',
-    description: '시/도 입력',
-    example: '서울특별시',
-  })
-  @ApiQuery({
-    name: 'gugun',
-    description: '구/군 입력',
-    example: '강남구',
-  })
-  @ApiQuery({
-    name: 'dong',
-    description: '동 입력',
-    example: '역삼1동',
-  })
-  @Get('id')
-  async getLocationId(
-    @Query('sido') sido: string,
-    @Query('gugun') gugun: string,
-    @Query('dong') dong: string,
-  ) {
-    return this.locationsService.getLocationId(sido, gugun, dong);
-  }
+  // @ApiOperation({ summary: '위치 ID 조회' })
+  // @ApiQuery({
+  //   name: 'sido',
+  //   description: '시/도 입력',
+  //   example: '서울특별시',
+  // })
+  // @ApiQuery({
+  //   name: 'gugun',
+  //   description: '구/군 입력',
+  //   example: '강남구',
+  // })
+  // @ApiQuery({
+  //   name: 'dong',
+  //   description: '동 입력',
+  //   example: '역삼1동',
+  // })
+  // @Get('id')
+  // async getLocationId(
+  //   @Query('sido') sido: string,
+  //   @Query('gugun') gugun: string,
+  //   @Query('dong') dong: string,
+  // ) {
+  //   return this.locationsService.getLocationId(sido, gugun, dong);
+  // }
 }
