@@ -68,7 +68,9 @@ export class User extends BaseEntity {
   @OneToMany(() => Friend, (friend) => friend.receiver)
   receivedRequests: Friend[];
 
-  @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants)
+  @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants, {
+    onDelete: 'CASCADE',
+  })
   chatRooms: ChatRoom[];
 
   @OneToMany(() => Message, (message) => message.sender)

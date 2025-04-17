@@ -5,7 +5,6 @@ import {
   IsString,
   MaxLength,
   Matches,
-  IsBoolean,
 } from 'class-validator';
 import { Theme } from '../entities/user.entity';
 import { LocationsEntity } from '../../locations/entities/location.entity';
@@ -31,7 +30,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
-  profileImage?: Express.Multer.File;
+  profileImage?: Express.Multer.File | string;
 
   @ApiProperty({
     enum: Theme,
@@ -43,27 +42,4 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(Theme, { message: '테마는 light 또는 dark만 선택 가능합니다.' })
   theme?: Theme;
-
-  @ApiProperty({
-    description: '이용약관 동의 여부',
-    required: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  termsAgreed?: boolean;
-
-  @ApiProperty({
-    description: '위치정보 수집 동의 여부',
-    required: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  locationAgreed?: boolean;
-
-  @ApiProperty({
-    description: '위치 정보',
-    required: false,
-  })
-  @IsOptional()
-  location?: LocationsEntity;
 }

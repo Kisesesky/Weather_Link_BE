@@ -16,6 +16,7 @@ import { EmailService } from './email/email.service';
 import { validatePassword } from 'src/utils/password-validator';
 import { LoginLogsService } from '../login-logs/login-logs.service';
 import { LocationsService } from '../locations/service/locations.service';
+import { SocialSignupDto } from './dto/social-sign-up.dto';
 
 @Injectable()
 export class AuthService {
@@ -265,5 +266,66 @@ export class AuthService {
     await this.usersService.updatePassword(email, hashedPassword);
 
     return { message: '비밀번호가 성공적으로 변경되었습니다.' };
+  }
+
+  async SocialSignup(userId: string, socialSignupDto: SocialSignupDto) {
+    // 약관 동의 검증
+    if (!socialSignupDto.termsAgreed || !socialSignupDto.locationAgreed) {
+      throw new BadRequestException('약관 동의가 필요합니다.');
+    }
+
+    // 위치 정보 찾기 (테스트용 임시 하드코딩)
+    const sido = '서울특별시';
+    const gugun = '강남구';
+    const dong = '역삼1동';
+
+    console.log('위치 정보 조회:', { sido, gugun, dong });
+
+    const location = await this.locationsService.findBySidoGugunDong(
+      // completeSocialSignupDto.sido,
+      // completeSocialSignupDto.gugun,
+      // completeSocialSignupDto.dong,
+      sido,
+      gugun,
+      dong,
+    );
+
+    if (!location) {
+      throw new BadRequestException('존재하지 않는 위치 정보입니다.');
+    }
+
+    // 사용자 정보 업데이트
+    const updatedUser = await this.usersService.completeSocialSignup(
+      userId,
+      socialSignupDto,
+      location,
+    );
+
+    // 약관 동의와 위치 설정이 완료된 사용자인지 확인
+    if (
+      !updatedUser.termsAgreed ||
+      !updatedUser.locationAgreed ||
+      !updatedUser.location
+    ) {
+      throw new BadRequestException('약관 동의와 위치 설정이 필요합니다.');
+    }
+
+    return updatedUser;
+  }
+
+  // 임시 토큰 생성 메서드 (소셜 로그인 콜백에서 사용)
+  createTemporaryToken(email: string, origin: string) {
+    const payload = { sub: email, isTemporary: true };
+    const maxAge = 30 * 60 * 1000; // 30분
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge,
+    });
+
+    return {
+      accessToken,
+      accessOptions: this.setCookieOption(maxAge, origin),
+    };
   }
 }

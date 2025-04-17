@@ -28,7 +28,9 @@ export class ChatRoom {
   @JoinColumn({ name: 'locationId' })
   location: LocationsEntity;
 
-  @ManyToMany(() => User, (user) => user.chatRooms)
+  @ManyToMany(() => User, (user) => user.chatRooms, {
+    onDelete: 'CASCADE',
+  })
   @JoinTable({
     name: 'chat_room_participants',
     joinColumn: { name: 'chatRoomId' },

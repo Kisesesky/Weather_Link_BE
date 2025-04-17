@@ -37,9 +37,9 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
       profileImage: profile.photos?.[0]?.value || profile._json.profile_image,
       termsAgreed: false,
       locationAgreed: false,
-      sido: '',
-      gugun: '',
-      dong: '',
+      sido: '서울특별시',
+      gugun: '강남구',
+      dong: '역삼1동',
     });
 
     return newUser;

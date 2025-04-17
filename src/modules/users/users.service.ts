@@ -16,6 +16,8 @@ import { S3Service } from '../s3/s3.service';
 import { LocationsService } from '../locations/service/locations.service';
 import { ChatRoomsService } from '../chat/service/chatRoom.service';
 import { ResponseSignUpDto } from '../auth/dto/response-sign-up.dto';
+import { SocialSignupDto } from '../auth/dto/social-sign-up.dto';
+import { LocationsEntity } from '../locations/entities/location.entity';
 
 @Injectable()
 export class UsersService {
@@ -165,6 +167,7 @@ export class UsersService {
   async getMyInfo(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
+      relations: ['location'],
     });
 
     if (!user) {
@@ -176,6 +179,15 @@ export class UsersService {
       email: user.email,
       name: user.name,
       profileImage: user.profileImage,
+      registerType: user.registerType,
+      theme: user.theme,
+      location: user.location
+        ? {
+            sido: user.location.sido,
+            gugun: user.location.gugun,
+            dong: user.location.dong,
+          }
+        : null,
     };
   }
 
@@ -194,7 +206,7 @@ export class UsersService {
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
-    profileImage?: Express.Multer.File,
+    profileImage?: Express.Multer.File | string,
   ) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
@@ -214,17 +226,23 @@ export class UsersService {
 
     // 프로필 이미지 업로드 처리
     if (profileImage) {
-      // 기존 프로필 이미지가 있고 기본 이미지가 아닌 경우 삭제
-      if (
-        user.profileImage &&
-        !user.profileImage.includes('profile-default.png')
-      ) {
-        await this.s3Service.deleteImage(user.profileImage);
+      if (typeof profileImage === 'string') {
+        // 문자열인 경우 (URL) 그대로 사용
+        user.profileImage = profileImage;
+      } else {
+        // File 객체인 경우 S3에 업로드
+        // 기존 프로필 이미지가 있고 기본 이미지가 아닌 경우 삭제
+        if (
+          user.profileImage &&
+          !user.profileImage.includes('profile-default.png')
+        ) {
+          await this.s3Service.deleteImage(user.profileImage);
+        }
+        user.profileImage = await this.s3Service.uploadImage(
+          profileImage,
+          'profiles',
+        );
       }
-      user.profileImage = await this.s3Service.uploadImage(
-        profileImage,
-        'profiles',
-      );
     }
 
     // 사용자 정보 업데이트
@@ -260,13 +278,36 @@ export class UsersService {
   }
 
   async deleteUser(userId: string): Promise<void> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['chatRooms'],
+    });
+
     if (!user) {
       throw new UnauthorizedException(
         '인증 정보가 없습니다. 로그인 후 이용해주세요.',
       );
     }
 
+    // 사용자가 참여 중인 모든 채팅방에서 제거
+    if (user.chatRooms && user.chatRooms.length > 0) {
+      for (const chatRoom of user.chatRooms) {
+        try {
+          // 채팅방에서 사용자 제거
+          chatRoom.participants = chatRoom.participants.filter(
+            (participant) => participant.id !== userId,
+          );
+          await this.chatRoomsService.save(chatRoom);
+        } catch (error) {
+          console.error(
+            `채팅방 ${chatRoom.id}에서 사용자 제거 중 오류 발생:`,
+            error,
+          );
+        }
+      }
+    }
+
+    // 사용자 삭제
     await this.usersRepository.remove(user);
   }
 
@@ -359,5 +400,33 @@ export class UsersService {
     }
 
     return location;
+  }
+
+  async completeSocialSignup(
+    userId: string,
+    completeSocialSignupDto: SocialSignupDto,
+    location: LocationsEntity,
+  ) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 프로필 이미지 업데이트
+    if (completeSocialSignupDto.profileImage) {
+      user.profileImage = completeSocialSignupDto.profileImage;
+    }
+
+    // 약관 동의 및 위치 정보 업데이트
+    user.termsAgreed = completeSocialSignupDto.termsAgreed;
+    user.locationAgreed = completeSocialSignupDto.locationAgreed;
+    user.location = location;
+
+    const updatedUser = await this.usersRepository.save(user);
+    const { password, ...rest } = updatedUser;
+    return rest;
   }
 }
