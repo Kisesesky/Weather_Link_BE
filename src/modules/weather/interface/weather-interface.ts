@@ -13,11 +13,3 @@ export interface ApiResponse {
     };
   };
 }
-
-export interface RegionMapping {
-  regId: string;
-  regions: {
-    sido: string;
-    guguns?: string[];
-  }[];
-}

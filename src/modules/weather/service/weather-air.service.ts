@@ -94,7 +94,7 @@ export class WeatherAirService {
 
     const airQuality = await this.airQulityRepository.findOne({
       where: { sido, gugun },
-      order: { dataTime: 'DESC' }
+      order: { createdAt: 'DESC' }
     });
 
     if(!airQuality) {

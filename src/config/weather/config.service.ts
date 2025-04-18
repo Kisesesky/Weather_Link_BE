@@ -20,4 +20,20 @@ export class WeatherConfigService {
   get midForecastApiUrl() {
     return this.configService.get<string>('weather.midForecastApiUrl');
   }
+
+  get midTempApiKey() {
+    return this.configService.get<string>('weather.midTempApiKey');
+  }
+
+  get midTempApiUrl() {
+    return this.configService.get<string>('weather.midTempApiUrl');
+  }
+
+  get dayForecastApiKey() {
+    return this.configService.get<string>('weather.dayForecastApiKey');
+  }
+
+  get dayForecastApiUrl() {
+    return this.configService.get<string>('weather.dayForecastApiUrl');
+  }
 }
