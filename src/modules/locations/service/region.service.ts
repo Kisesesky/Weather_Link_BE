@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { LocationsEntity } from '../entities/location.entity';
@@ -6,7 +6,7 @@ import { RegionEntity } from '../entities/region.entity';
 import { seedRegions } from '../utils/region';
 
 @Injectable()
-export class RegionService implements OnModuleInit {
+export class RegionService {
   private readonly logger = new Logger(RegionService.name);
 
   constructor(
@@ -17,7 +17,7 @@ export class RegionService implements OnModuleInit {
     private dataSource: DataSource
   ) {}
   
-  async onModuleInit() {
+  async initRegionMoudle() {
     try{
       const count = await this.regionRepository.count();
       if (count === 0) {

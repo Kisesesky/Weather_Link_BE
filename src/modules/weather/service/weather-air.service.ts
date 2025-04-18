@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import axios from "axios";
-import moment from "moment";
+import * as moment from 'moment';
 import { LocationsEntity } from "src/modules/locations/entities/location.entity";
 import { LessThan, Repository } from "typeorm";
 import { WeatherAirEntity } from "../entities/weather-air.entity";

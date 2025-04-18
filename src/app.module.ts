@@ -12,6 +12,9 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoginLogsModule } from './modules/login-logs/login-logs.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { InitService } from './init/init.service';
+import { LocationsService } from './modules/locations/service/locations.service';
+import { RegionService } from './modules/locations/service/region.service';
 
 @Module({
   imports: [
@@ -19,7 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot(AppDataSource.options),
-    ScheduleModule.forRoot(),
+    ScheduleModule.forRoot(), //api호출 테스트 아닐시에는 주석처리부탁드립니다.
     UsersModule,
     AuthModule,
     LoginLogsModule,
@@ -29,6 +32,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, InitService, LocationsService, RegionService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private readonly initService: InitService) {}
+}
