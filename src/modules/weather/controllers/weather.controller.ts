@@ -6,6 +6,7 @@ import { MidForecastService } from '../service/mid-forecast.service';
 import { TransformedMidTermForecastDto } from '../dto/mid-forecast.dto';
 import * as moment from 'moment';
 import { DailyForecastService } from '../service/daily-forecast.service';
+import { TodayForecastService } from '../service/today-forcast.service';
 
 @ApiTags('날씨 서비스')
 @Controller('weather')
@@ -15,6 +16,7 @@ export class WeatherController {
     private readonly weatherAirService: WeatherAirService,
     private readonly midForecastService: MidForecastService,
     private readonly dailyForecastService: DailyForecastService,
+    private readonly todayForecastService: TodayForecastService,
     ) {}
 
   //현재시각기준 미세먼지 데이터수집
@@ -112,7 +114,7 @@ export class WeatherController {
     return this.midForecastService.fetchAndSaveMidForecasts(locationId);
   }
 
-  @ApiOperation({ summary: '주간예보 검색 시도/구군' })
+  @ApiOperation({ summary: '주간예보 검색 시/도 구/군' })
   @ApiQuery({
     name: 'sido',
     description: '시/도 입력',
@@ -204,4 +206,48 @@ export class WeatherController {
     return await this.dailyForecastService.collectLocationWeather(sido, gugun, dong);
   }
 
+  @ApiOperation({ summary: '지역별 일기 예보 조회' })
+  @ApiQuery({ 
+    name: 'sido', 
+    type: 'string', 
+    required: true,
+    description: '시/도 이름 (예: 서울특별시)' 
+  })
+  @ApiQuery({ 
+    name: 'gugun', 
+    type: 'string', 
+    required: false,
+    description: '구/군 이름 (예: 강남구)' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '지역별 일기 예보 조회 성공'
+  })
+  @ApiResponse({ status: 404, description: '해당 지역의 날씨 정보를 찾을 수 없습니다.' })
+  @Get('forecast')
+  async getForecast(
+    @Query('sido') sido: string,
+    @Query('gugun') gugun?: string,
+  ) {
+    const forecast = await this.todayForecastService.getForecastByRegionName(sido, gugun);
+
+    return {
+      location: {
+        sido,
+        gugun,
+      },
+      forecast,
+    };
+  }
+
+  @Get('forecast')
+    @ApiOperation({ summary: '지역별 날씨 예보 조회' })
+    @ApiQuery({ name: 'sido', required: true, description: '시/도 이름' })
+    @ApiQuery({ name: 'gugun', required: false, description: '구/군 이름' })
+    async getDailyForecast(
+        @Query('sido') sido: string,
+        @Query('gugun') gugun?: string,
+    ) {
+        return await this.todayForecastService.getForecastByRegionName(sido, gugun);
+    }
 }

@@ -28,15 +28,15 @@ export class AuthServiceController {
   @Post('signup/sendcode')
   async sendCode(@Body() sendEmailCodeDto: SendEmailCodeDto) {
     await this.authService.sendCode(sendEmailCodeDto.email);
-    return { message: '인증 코드 전송 완료!, 제한시간 1분' };
+    return { message: '인증 코드 전송 완료!, 제한시간 2분' };
   }
 
   @ApiOperation({ summary: '회원가입 이메일 인증코드 검증' })
   @ApiBody({ type: VerifyEmailCodeDto })
   @HttpCode(HttpStatus.OK)
   @Post('signup/verifycode')
-  verifyCode(@Body() verifyEmailCodeDto: VerifyEmailCodeDto) {
-    const result = this.authService.verifyCode(
+  async verifyCode(@Body() verifyEmailCodeDto: VerifyEmailCodeDto) {
+    const result = await this.authService.verifyCode(
       verifyEmailCodeDto.email,
       verifyEmailCodeDto.code,
     );
