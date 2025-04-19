@@ -4,7 +4,7 @@ import axios from "axios";
 import { Between, Repository } from "typeorm";
 import * as dayjs from 'dayjs';
 import * as iconv from 'iconv-lite';
-import { preMap, skyMap } from "../utils/weather-conditions";
+import { preMap, weeklySky } from "../utils/weather-conditions";
 import { Cron } from "@nestjs/schedule";
 import { MidTermForecastEntity } from "../entities/mid-term-forecast.entity";
 import { TransformedMidTermForecastDto } from "../dto/mid-forecast.dto";
@@ -170,7 +170,7 @@ export class MidForecastService {
   }
 
   private transformSkyAndPre(sky: string, pre: string): string {
-    const skyDesc = skyMap[sky] || '';
+    const skyDesc = weeklySky[sky] || '';
     const preDesc = preMap[pre] || '';
     return preDesc ? `${skyDesc}, ${preDesc}` : skyDesc;
   }

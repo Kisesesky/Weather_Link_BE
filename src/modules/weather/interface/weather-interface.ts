@@ -13,3 +13,13 @@ export interface ApiResponse {
     };
   };
 }
+
+export interface ForecastTimeSlot {
+  forecastDateTime: string;
+  temperature: number | null;
+  skyCondition: string | null;
+  rainProbability: number | null;
+  precipitationType: string | null;
+  humidity: number | null;
+  snowfall: string | null;
+}

@@ -17,6 +17,8 @@ import { WeatherConfigService } from './config.service';
         MID_TEMP_API_URL: Joi.string().required(),
         DAY_FORECAST_API_KEY: Joi.string().required(),
         DAY_FORECAST_API_URL: Joi.string().required(),
+        DAILY_FORECAST_API_KEY: Joi.string().required(),
+        DAILY_FORECAST_API_URL: Joi.string().required(),
       }),
       isGlobal: true,
     }),

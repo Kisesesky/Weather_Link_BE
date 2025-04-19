@@ -16,6 +16,9 @@ import { MidTempController } from './controllers/mid-temp.controller';
 import { DailyForecastEntity } from './entities/daily-forecast.entity';
 import { DailyForecastService } from './service/daily-forecast.service';
 import { HttpModule } from '@nestjs/axios';
+import { TodayForecastService } from './service/today-forcast.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TodayForecastEntity } from './entities/today-forecast.entity';
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { HttpModule } from '@nestjs/axios';
       MidTermForecastEntity,
       MidTermTempEntity,
       DailyForecastEntity,
+      TodayForecastEntity,
     ]),
     WeatherConfigModule,
     LocationsModule,
@@ -38,6 +42,7 @@ import { HttpModule } from '@nestjs/axios';
     MidForecastService,
     MidTempService,
     DailyForecastService,
+    TodayForecastService,
   ],
   exports: [WeatherAirService],
 })

@@ -13,14 +13,14 @@ import { RegIdMapping, RegionInfo } from '../interface/region.interface';
 import { REGION_MAPPINGS, REGION_MAPS, SIDO_NAME_MAP } from '../utils/region-map';
 
 @Injectable()
-export class LocationsService implements OnModuleInit {
+export class LocationsService {
   private readonly logger = new Logger(LocationsService.name);
   constructor(
     @InjectRepository(LocationsEntity)
     private locationsRepository: Repository<LocationsEntity>,
   ) {}
 
-  async onModuleInit() {
+  async initLocationMoudle() {
     const count = await this.locationsRepository.count();
     if (count === 0) {
       this.logger.log('📁 location 데이터가 없어서 CSV에서 불러오는 중...');
