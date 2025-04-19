@@ -12,6 +12,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoginLogsModule } from './modules/login-logs/login-logs.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AlertsModule } from './modules/alerts/alert.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     WeatherModule,
     FriendsModule,
     ChatModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,20 +1,36 @@
 import { User } from 'src/modules/users/entities/user.entity';
-import { BaseEntity, Column, Entity, ManyToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { AlertLog } from './alert-log.entity';
 
-@Entity()
-export class AlertSetting extends BaseEntity {
+@Entity('alert_settings')
+export class AlertSetting {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
   @ManyToOne(() => User, (user) => user.alertSettings, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column()
-  type: string; // 'rain', 'pm10', etc.
+  @Column({ type: 'varchar', length: 20 })
+  type: 'TEMPERATURE' | 'HUMIDITY' | 'WIND' | 'AIRQUALITY';
 
   @Column('double precision')
-  threshold: number;
+  threshold: number; // 임계치
 
   @Column()
-  unit: string;
+  unit: string; // 단위
+
+  @Column({ type: 'varchar' })
+  condition: 'above' | 'below' | 'equal';
 
   @Column()
-  condition: string; // '>', '<', '='
+  active: boolean;
+
+  @OneToMany(() => AlertLog, (alertLog) => alertLog.alertSetting)
+  alertLogs: AlertLog[];
 }

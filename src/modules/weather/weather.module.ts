@@ -18,9 +18,27 @@ import { DailyForecastService } from './service/daily-forecast.service';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WeatherAirEntity, LocationsEntity, MidTermForecastEntity, MidTermTempEntity, DailyForecastEntity]), WeatherConfigModule, LocationsModule, HttpModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      WeatherAirEntity,
+      LocationsEntity,
+      MidTermForecastEntity,
+      MidTermTempEntity,
+      DailyForecastEntity,
+    ]),
+    WeatherConfigModule,
+    LocationsModule,
+    HttpModule,
+  ],
   controllers: [WeatherController, MidTempController],
-  providers: [WeatherService, WeatherAirService, WeatherConfigService, MidForecastService, MidTempService, DailyForecastService],
-  exports: [WeatherAirService]
+  providers: [
+    WeatherService,
+    WeatherAirService,
+    WeatherConfigService,
+    MidForecastService,
+    MidTempService,
+    DailyForecastService,
+  ],
+  exports: [WeatherAirService],
 })
 export class WeatherModule {}

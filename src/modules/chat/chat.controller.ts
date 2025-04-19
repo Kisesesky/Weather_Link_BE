@@ -12,7 +12,7 @@ import { Message } from './entities/message.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 
-@ApiTags('chat')
+@ApiTags('채팅')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
