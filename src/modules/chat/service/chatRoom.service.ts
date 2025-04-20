@@ -34,9 +34,18 @@ export class ChatRoomsService {
   }
 
   async findOne(sido: string): Promise<ChatRoom> {
+    // 1. sido로 Location 찾기
+    const location = await this.locationsService.findBySido(sido);
+    if (!location) {
+      throw new NotFoundException(
+        `${sido}에 해당하는 위치 정보를 찾을 수 없습니다.`,
+      );
+    }
+
+    // 2. 찾은 Location ID로 ChatRoom 찾기 (location 정보 포함)
     const chatRoom = await this.chatRoomsRepository.findOne({
-      where: { name: `${sido} 날씨 이야기` },
-      relations: ['participants'],
+      where: { location: { id: location.id } }, // location id로 검색
+      relations: ['participants', 'location'], // location 정보 로드 추가
     });
 
     if (!chatRoom) {
@@ -70,8 +79,27 @@ export class ChatRoomsService {
   }
 
   async getAllRooms() {
+    // find 옵션에 select 추가하여 필요한 필드만 선택
     return this.chatRoomsRepository.find({
-      relations: ['location', 'participants'],
+      select: {
+        id: true, // ChatRoom의 id
+        name: true, // ChatRoom의 name
+        location: {
+          // 연관된 location 필드 선택
+          id: true,
+          sido: true,
+        },
+        participants: {
+          // 연관된 participants(User) 필드 선택
+          id: true,
+          name: true,
+        },
+      },
+      relations: {
+        // 관계 설정은 유지
+        location: true,
+        participants: true,
+      },
     });
   }
 

@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { Response } from 'express';
@@ -34,6 +35,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RegisterType } from '../../users/entities/user.entity';
 import { SocialSignupDto } from '../dto/social-sign-up.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('유저 인증')
 @Controller('auth')
@@ -49,12 +51,21 @@ export class AuthController {
   async signUp(
     @Body() signUpDto: SignUpDto,
     @UploadedFile() profileImage?: Express.Multer.File,
-  ): Promise<ResponseSignUpDto> {
+  ): Promise<ResponseDto<ResponseSignUpDto>> {
     try {
       signUpDto.registerType = RegisterType.EMAIL;
-      return await this.authService.signUp(signUpDto, profileImage);
+      const user = await this.authService.signUp(signUpDto, profileImage);
+      return new ResponseDto({
+        success: true,
+        message: '회원가입이 완료되었습니다.',
+        data: user,
+      });
     } catch (error) {
-      throw new BadRequestException('회원가입에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '회원가입에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -73,13 +84,22 @@ export class AuthController {
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
-      return res.json({
-        message: '로그인 성공!',
-        accessToken,
-        refreshToken,
-      });
+      return res.json(
+        new ResponseDto({
+          success: true,
+          message: '로그인 성공!',
+          data: {
+            accessToken,
+            refreshToken,
+          },
+        }),
+      );
     } catch (error) {
-      throw new BadRequestException('로그인에 실패했습니다.');
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: '이메일 또는 패스워드가 잘못되었습니다.',
+        error: 'Unauthorized',
+      });
     }
   }
 
@@ -96,23 +116,24 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleCallback(
+  googleCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     try {
-      // 임시 토큰 생성
       const { accessToken, accessOptions } =
-        await this.authService.createTemporaryToken(user.email, origin);
+        this.authService.createTemporaryToken(user.email, origin);
 
-      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
 
-      // 추가 정보 입력 페이지로 리다이렉트
       return res.redirect(`${origin}/signup/social/complete`);
     } catch (error) {
-      throw new BadRequestException('구글 로그인에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '구글 로그인에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -129,23 +150,24 @@ export class AuthController {
 
   @Get('kakao/callback')
   @UseGuards(KakaoAuthGuard)
-  async kakaoCallback(
+  kakaoCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     try {
-      // 임시 토큰 생성
       const { accessToken, accessOptions } =
-        await this.authService.createTemporaryToken(user.email, origin);
+        this.authService.createTemporaryToken(user.email, origin);
 
-      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
 
-      // 추가 정보 입력 페이지로 리다이렉트
       return res.redirect(`${origin}/signup/social/complete`);
     } catch (error) {
-      throw new BadRequestException('구글 로그인에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '카카오 로그인에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -162,23 +184,24 @@ export class AuthController {
 
   @Get('naver/callback')
   @UseGuards(NaverAuthGuard)
-  async naverCallback(
+  naverCallback(
     @RequestUser() user: User,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     try {
-      // 임시 토큰 생성
       const { accessToken, accessOptions } =
-        await this.authService.createTemporaryToken(user.email, origin);
+        this.authService.createTemporaryToken(user.email, origin);
 
-      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
 
-      // 추가 정보 입력 페이지로 리다이렉트
       return res.redirect(`${origin}/signup/social/complete`);
     } catch (error) {
-      throw new BadRequestException('구글 로그인에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '네이버 로그인에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -196,24 +219,24 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      // 추가 정보로 사용자 정보 업데이트
       const completedUser = await this.authService.SocialSignup(
         user.id,
         socialSignupDto,
       );
 
-      // 새로운 토큰 발급
       const { accessToken, refreshToken, accessOptions, refreshOptions } =
-        await this.authService.makeJwtToken(completedUser.email, origin);
+        this.authService.makeJwtToken(completedUser.email, origin);
 
-      // 쿠키 설정
       res.cookie('Authentication', accessToken, accessOptions);
       res.cookie('Refresh', refreshToken, refreshOptions);
 
-      // 프론트엔드 메인 페이지로 리다이렉트
       return res.redirect(`${origin}/main`);
     } catch (error) {
-      throw new BadRequestException('추가 정보 입력에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '추가 정보 입력에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -222,14 +245,25 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   logout(@Res() res: Response, @RequestOrigin() origin: string) {
-    const { accessOptions, refreshOptions } =
-      this.authService.expireJwtToken(origin);
+    try {
+      const { accessOptions, refreshOptions } =
+        this.authService.expireJwtToken(origin);
 
-    res.cookie('Authentication', '', accessOptions);
-    res.cookie('Refresh', '', refreshOptions);
+      res.cookie('Authentication', '', accessOptions);
+      res.cookie('Refresh', '', refreshOptions);
 
-    return res.json({
-      message: '로그아웃 완료!',
-    });
+      return res.json(
+        new ResponseDto({
+          success: true,
+          message: '로그아웃 완료!',
+        }),
+      );
+    } catch (error) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: '로그아웃에 실패했습니다.',
+        error: 'Unauthorized',
+      });
+    }
   }
 }
