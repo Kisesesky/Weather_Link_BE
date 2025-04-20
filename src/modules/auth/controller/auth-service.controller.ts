@@ -28,7 +28,7 @@ export class AuthServiceController {
   @Post('signup/sendcode')
   async sendCode(@Body() sendEmailCodeDto: SendEmailCodeDto) {
     await this.authService.sendCode(sendEmailCodeDto.email);
-    return { message: '인증 코드 전송 완료!, 제한시간 2분' };
+    return { success: true, message: '인증 코드 전송 완료!, 제한시간 2분' };
   }
 
   @ApiOperation({ summary: '회원가입 이메일 인증코드 검증' })
@@ -41,11 +41,13 @@ export class AuthServiceController {
       verifyEmailCodeDto.code,
     );
     if (!result) {
-      throw new BadRequestException(
-        '인증 코드가 일치하지 않거나 만료된 코드입니다.',
-      );
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: '인증 코드가 일치하지 않거나 만료된 코드입니다.',
+        error: 'Bad Request',
+      });
     }
-    return { sucess: true, message: '인증완료' };
+    return { success: true, message: '인증완료' };
   }
 
   //비밀번호 찾기
@@ -53,7 +55,8 @@ export class AuthServiceController {
   @ApiBody({ type: SendEmailCodeDto })
   @Post('password/find/email')
   async sendPasswordFindEmail(@Body('email') email: string) {
-    return this.authService.sendPasswordFindEmail(email);
+    const message = await this.authService.sendPasswordFindEmail(email);
+    return { success: true, message };
   }
 
   @ApiOperation({ summary: '비밀번호 찾기 이메일 인증코드 검증' })
@@ -63,18 +66,20 @@ export class AuthServiceController {
     @Body('email') email: string,
     @Body('code') code: string,
   ) {
-    return this.authService.verifyPasswordFindCode(email, code);
+    const message = await this.authService.verifyPasswordFindCode(email, code);
+    return { success: true, message };
   }
 
   @ApiOperation({ summary: '비밀번호 찾기 이후 비밀번호 변경' })
   @ApiBody({ type: PasswordDto })
   @Patch('password/find/reset')
   async resetForgottenPassword(@Body() passwordDto: PasswordDto) {
-    return this.authService.resetForgottenPassword(
+    const message = await this.authService.resetForgottenPassword(
       passwordDto.email,
       passwordDto.newPassword,
       passwordDto.confirmPassword,
     );
+    return { success: true, message };
   }
 
   //로컬비밀번호수정
@@ -88,23 +93,25 @@ export class AuthServiceController {
     @RequestOrigin() origin: string,
     @Body() passwordDto: ChangePasswordDto,
   ) {
-    const result = await this.authService.changePassword(
+    const message = await this.authService.changePassword(
       user.email,
       passwordDto.currentPassword,
       passwordDto.newPassword,
       passwordDto.confirmPassword,
     );
 
-    // 비밀번호 변경 후 새로운 토큰 발급
     const { accessToken, refreshToken, accessOptions, refreshOptions } =
       this.authService.makeJwtToken(user.email, origin);
 
     return {
-      ...result,
-      accessToken,
-      refreshToken,
-      accessOptions,
-      refreshOptions,
+      success: true,
+      message,
+      data: {
+        accessToken,
+        refreshToken,
+        accessOptions,
+        refreshOptions,
+      },
     };
   }
 }
