@@ -1,6 +1,0 @@
-export enum AlertType {
-  TEMPERATURE = 'TEMPERATURE',
-  HUMIDITY = 'HUMIDITY',
-  WIND = 'WIND',
-  AIRQUALITY = 'AIRQUALITY',
-} 

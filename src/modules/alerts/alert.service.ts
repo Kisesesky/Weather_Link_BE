@@ -35,9 +35,19 @@ export class AlertsService {
     user: User,
     createAlertSettingdto: CreateAlertSettingDto,
   ): Promise<AlertSetting> {
-    const setting = new AlertSetting();
-    setting.user = user;
-    setting.type = createAlertSettingdto.type;
+    // 1. userId와 type으로 기존 설정 확인
+    let setting = await this.alertSettingRepository.findOne({
+      where: { user: { id: user.id }, type: createAlertSettingdto.type },
+    });
+
+    // 2. 기존 설정이 있으면 업데이트, 없으면 새로 생성
+    if (!setting) {
+      setting = new AlertSetting(); // 새로운 설정 객체 생성
+      setting.user = user;
+      setting.type = createAlertSettingdto.type;
+    }
+
+    // 공통 업데이트 로직 (기존 설정/새 설정 모두에 적용)
     setting.unit = createAlertSettingdto.unit;
     setting.condition = createAlertSettingdto.condition;
     setting.active = createAlertSettingdto.active;

@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // 요청 데이터를 DTO 타입으로 변환
+    }),
+  );
 
   // CORS 설정
   app.enableCors({
@@ -32,7 +39,10 @@ async function bootstrap() {
 
   // Swagger JSON 파일로 저장
   const fs = require('fs');
-  fs.writeFileSync("./src/docs/swagger/swagger-spec.json", JSON.stringify(document));
+  fs.writeFileSync(
+    './src/docs/swagger/swagger-spec.json',
+    JSON.stringify(document),
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }
