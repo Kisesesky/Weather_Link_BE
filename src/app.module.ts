@@ -12,6 +12,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoginLogsModule } from './modules/login-logs/login-logs.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AlertsModule } from './modules/alerts/alert.module';
 import { InitService } from './init/init.service';
 import { LocationsService } from './modules/locations/service/locations.service';
 import { RegionService } from './modules/locations/service/region.service';
@@ -30,6 +31,7 @@ import { RegionService } from './modules/locations/service/region.service';
     WeatherModule,
     FriendsModule,
     ChatModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService, InitService, LocationsService, RegionService],

@@ -5,6 +5,8 @@ import { LocationsEntity } from 'src/modules/locations/entities/location.entity'
 import { Friend } from 'src/modules/friends/entities/friend.entity';
 import { ChatRoom } from 'src/modules/chat/entities/chatRoom.entity';
 import { Message } from 'src/modules/chat/entities/message.entity';
+import { AlertSetting } from 'src/modules/alerts/entities/alert_setting.entity';
+import { AlertLog } from 'src/modules/alerts/entities/alert-log.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
@@ -81,4 +83,10 @@ export class User extends BaseEntity {
 
   @Column()
   locationAgreed: boolean;
+
+  @OneToMany(() => AlertSetting, (alertSetting) => alertSetting.user)
+  alertSettings: AlertSetting[];
+
+  @OneToMany(() => AlertLog, (alertLog) => alertLog.user)
+  alertLogs: AlertLog[];
 }

@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 
-@ApiTags('Friend')
+@ApiTags('친구 관리')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('friends')

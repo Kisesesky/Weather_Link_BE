@@ -23,27 +23,27 @@ import { TodayForecastEntity } from './entities/today-forecast.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      WeatherAirEntity, 
-      LocationsEntity, 
-      MidTermForecastEntity, 
-      MidTermTempEntity, 
+      WeatherAirEntity,
+      LocationsEntity,
+      MidTermForecastEntity,
+      MidTermTempEntity,
       DailyForecastEntity,
-      TodayForecastEntity
-    ]), 
-    WeatherConfigModule, 
-    LocationsModule, 
+      TodayForecastEntity,
+    ]),
+    WeatherConfigModule,
+    LocationsModule,
     HttpModule,
   ],
   controllers: [WeatherController, MidTempController],
   providers: [
-    WeatherService, 
-    WeatherAirService, 
-    WeatherConfigService, 
-    MidForecastService, 
-    MidTempService, 
-    DailyForecastService, 
-    TodayForecastService
+    WeatherService,
+    WeatherAirService,
+    WeatherConfigService,
+    MidForecastService,
+    MidTempService,
+    DailyForecastService,
+    TodayForecastService,
   ],
-  exports: [WeatherAirService]
+  exports: [WeatherAirService],
 })
 export class WeatherModule {}

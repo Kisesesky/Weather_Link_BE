@@ -11,7 +11,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { ResponseDto } from 'src/common/dto/response.dto';
 
-@ApiTags('chat')
+@ApiTags('채팅')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
