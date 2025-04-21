@@ -21,6 +21,7 @@ import { SendFriendRequestDto } from './dto/send-friend-request.dto';
 import { RespondFriendRequestDto } from './dto/response-friend-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('친구 관리')
 @ApiBearerAuth()
@@ -34,59 +35,142 @@ export class FriendsController {
   @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
   @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
   @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
-  @ApiResponse({ status: 200, description: '유저 검색 결과 반환' })
-  search(@Query('name') name: string, @Query() paginationDto: PaginationDto) {
-    return this.friendsService.searchUsers(name, paginationDto);
+  @ApiResponse({
+    status: 200,
+    description: '유저 검색 성공',
+    type: ResponseDto,
+  })
+  async search(
+    @Query('name') name: string,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.searchUsers(name, paginationDto);
+    return new ResponseDto({
+      success: true,
+      message: '유저 검색 성공',
+      data,
+    });
   }
 
   @Post('request')
   @ApiOperation({ summary: '친구 요청 보내기' })
   @ApiBody({ type: SendFriendRequestDto })
-  @ApiResponse({ status: 201, description: '친구 요청 전송 성공' })
-  sendRequest(@Body() body: SendFriendRequestDto, @Req() req) {
-    return this.friendsService.sendFriendRequest(req.user.id, body.receiverId);
+  @ApiResponse({
+    status: 201,
+    description: '친구 요청 성공',
+    type: ResponseDto,
+  })
+  async sendRequest(
+    @Body() body: SendFriendRequestDto,
+    @Req() req,
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.sendFriendRequest(
+      req.user.id,
+      body.receiverId,
+    );
+    return new ResponseDto({
+      success: true,
+      message: '친구 요청 성공',
+      data,
+    });
   }
 
   @Post('respond')
   @ApiOperation({ summary: '친구 요청 응답 (수락/거절)' })
   @ApiBody({ type: RespondFriendRequestDto })
-  @ApiResponse({ status: 200, description: '친구 요청 응답 처리 완료' })
-  respond(@Body() body: { requestId: string; accept: boolean }, @Req() req) {
-    return this.friendsService.respondToFriendRequest(
+  @ApiResponse({
+    status: 200,
+    description: '친구 요청 응답 처리 성공',
+    type: ResponseDto,
+  })
+  async respond(
+    @Body() body: { requestId: string; accept: boolean },
+    @Req() req,
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.respondToFriendRequest(
       body.requestId,
       req.user.id,
       body.accept,
     );
+    return new ResponseDto({
+      success: true,
+      message: '친구 요청 응답 처리 성공',
+      data,
+    });
   }
 
   @Get()
   @ApiOperation({ summary: '친구 목록 조회' })
   @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
   @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
-  @ApiResponse({ status: 200, description: '나의 친구 목록 반환' })
-  getFriends(@Req() req, @Query() paginationDto: PaginationDto) {
-    return this.friendsService.getFriendsList(req.user.id, paginationDto);
+  @ApiResponse({
+    status: 200,
+    description: '친구 목록 조회 성공',
+    type: ResponseDto,
+  })
+  async getFriends(
+    @Req() req,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.getFriendsList(
+      req.user.id,
+      paginationDto,
+    );
+    return new ResponseDto({
+      success: true,
+      message: '친구 목록 조회 성공',
+      data,
+    });
   }
 
   @Get('requests/pending')
   @ApiOperation({ summary: '내가 보낸 친구 요청 목록' })
-  @ApiResponse({ status: 200, description: '보낸 친구 요청 목록 반환' })
-  getPendingRequests(@Req() req) {
-    return this.friendsService.getSentRequests(req.user.id);
+  @ApiResponse({
+    status: 200,
+    description: '보낸 친구 요청 목록 조회 성공',
+    type: ResponseDto,
+  })
+  async getPendingRequests(@Req() req): Promise<ResponseDto> {
+    const data = await this.friendsService.getSentRequests(req.user.id);
+    return new ResponseDto({
+      success: true,
+      message: '보낸 친구 요청 목록 조회 성공',
+      data,
+    });
   }
 
   @Get('requests/received')
   @ApiOperation({ summary: '내가 받은 친구 요청 목록' })
-  @ApiResponse({ status: 200, description: '받은 친구 요청 목록 반환' })
-  getReceivedRequests(@Req() req) {
-    return this.friendsService.getReceivedRequests(req.user.id);
+  @ApiResponse({
+    status: 200,
+    description: '받은 친구 요청 목록 조회 성공',
+    type: ResponseDto,
+  })
+  async getReceivedRequests(@Req() req): Promise<ResponseDto> {
+    const data = await this.friendsService.getReceivedRequests(req.user.id);
+    return new ResponseDto({
+      success: true,
+      message: '받은 친구 요청 목록 조회 성공',
+      data,
+    });
   }
 
   @Delete('remove')
   @ApiOperation({ summary: '친구 삭제' })
-  @ApiResponse({ status: 200, description: '친구 삭제 완료' })
-  removeFriend(@Req() req, @Body() body: { friendId: string }) {
-    return this.friendsService.removeFriend(req.user.id, body.friendId);
+  @ApiResponse({
+    status: 200,
+    description: '친구 삭제 성공',
+    type: ResponseDto,
+  })
+  async removeFriend(
+    @Req() req,
+    @Body() body: { friendId: string },
+  ): Promise<ResponseDto> {
+    await this.friendsService.removeFriend(req.user.id, body.friendId);
+    return new ResponseDto({
+      success: true,
+      message: '친구 삭제 성공',
+    });
   }
 
   @Get('search/friends')
@@ -94,12 +178,25 @@ export class FriendsController {
   @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
   @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
   @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
-  @ApiResponse({ status: 200, description: '친구 검색 결과 반환' })
-  searchFriends(
+  @ApiResponse({
+    status: 200,
+    description: '친구 검색 성공',
+    type: ResponseDto,
+  })
+  async searchFriends(
     @Req() req,
     @Query('name') name: string,
     @Query() paginationDto: PaginationDto,
-  ) {
-    return this.friendsService.searchFriends(req.user.id, name, paginationDto);
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.searchFriends(
+      req.user.id,
+      name,
+      paginationDto,
+    );
+    return new ResponseDto({
+      success: true,
+      message: '친구 검색 성공',
+      data,
+    });
   }
 }

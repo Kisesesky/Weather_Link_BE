@@ -25,6 +25,7 @@ import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('사용자')
 @ApiBearerAuth()
@@ -37,7 +38,12 @@ export class UsersController {
   @ApiOperation({ summary: '내 정보 조회' })
   @ApiResponse({ status: 200, description: '내 정보 조회 성공', type: User })
   async getMe(@RequestUser() user: User) {
-    return this.usersService.getMyInfo(user.id);
+    const userInfo = await this.usersService.getMyInfo(user.id);
+    return new ResponseDto({
+      success: true,
+      message: '내 정보 조회 성공',
+      data: userInfo,
+    });
   }
 
   @Patch('myinfo')
@@ -51,13 +57,22 @@ export class UsersController {
     @UploadedFile() profileImage?: Express.Multer.File,
   ) {
     try {
-      return await this.usersService.updateUser(
+      const updatedUser = await this.usersService.updateUser(
         user.id,
         updateUserDto,
         profileImage,
       );
+      return new ResponseDto({
+        success: true,
+        message: '회원 정보 수정 성공',
+        data: updatedUser,
+      });
     } catch (error) {
-      throw new BadRequestException('회원 정보 수정에 실패했습니다.');
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '회원 정보 수정에 실패했습니다.',
+        error: 'Bad Request',
+      });
     }
   }
 
@@ -66,7 +81,10 @@ export class UsersController {
   @ApiResponse({ status: 200, description: '회원 탈퇴 성공' })
   async deleteAccount(@RequestUser() user: User) {
     await this.usersService.deleteUser(user.id);
-    return { message: '회원 탈퇴가 완료되었습니다.' };
+    return new ResponseDto({
+      success: true,
+      message: '회원 탈퇴가 완료되었습니다.',
+    });
   }
 
   @Get('location')
@@ -88,7 +106,12 @@ export class UsersController {
     },
   })
   async getUserLocation(@Request() req) {
-    return this.usersService.getUserLocation(req.user.id);
+    const location = await this.usersService.getUserLocation(req.user.id);
+    return new ResponseDto({
+      success: true,
+      message: '위치 정보 조회 성공',
+      data: location,
+    });
   }
 
   @Patch('location')
@@ -122,17 +145,25 @@ export class UsersController {
     @Body() updateLocationDto: UpdateLocationDto,
   ) {
     try {
-      return await this.usersService.updateUserLocation(
+      const location = await this.usersService.updateUserLocation(
         req.user.id,
         updateLocationDto.locationId,
       );
+      return new ResponseDto({
+        success: true,
+        message: '위치 정보 수정 성공',
+        data: location,
+      });
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException(
-        '위치 정보 수정에 실패했습니다. 올바른 위치 ID를 입력해주세요.',
-      );
+      throw new BadRequestException({
+        statusCode: 400,
+        message:
+          '위치 정보 수정에 실패했습니다. 올바른 위치 ID를 입력해주세요.',
+        error: 'Bad Request',
+      });
     }
   }
 }

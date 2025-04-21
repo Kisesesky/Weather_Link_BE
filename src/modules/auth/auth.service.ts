@@ -200,24 +200,24 @@ export class AuthService {
 
   // 1. 비밀번호 찾기 이메일 발송
   // 1-1.이메일 발송
-  async sendPasswordFindEmail(email: string) {
+  async sendPasswordFindEmail(email: string): Promise<string> {
     const user = await this.usersService.findUserByEmail(email);
     if (!user) {
       throw new NotFoundException('존재하지 않는 이메일입니다.');
     }
 
     await this.emailService.sendVerificationCode(email, 'password');
-    return { message: '인증 코드가 이메일로 발송되었습니다.' };
+    return '인증 코드가 이메일로 발송되었습니다.';
   }
 
   // 1-2. 이메일 인증 코드 확인
-  async verifyPasswordFindCode(email: string, code: string) {
+  async verifyPasswordFindCode(email: string, code: string): Promise<string> {
     const isVerified = await this.emailService.verifyCode(email, code);
     if (!isVerified) {
       throw new UnauthorizedException('잘못된 인증 코드입니다.');
     }
 
-    return { message: '인증이 완료되었습니다.' };
+    return '인증이 완료되었습니다.';
   }
 
   // 1-3. 새 비밀번호 설정
@@ -225,7 +225,7 @@ export class AuthService {
     email: string,
     newPassword: string,
     confirmPassword: string,
-  ) {
+  ): Promise<string> {
     const isVerified = await this.emailService.isEmailVerified(email);
     if (!isVerified) {
       throw new UnauthorizedException('이메일 인증이 필요합니다.');
@@ -239,7 +239,7 @@ export class AuthService {
     const hashedPassword = await encryptPassword(newPassword);
     await this.usersService.updatePassword(email, hashedPassword);
 
-    return { message: '비밀번호가 성공적으로 변경되었습니다.' };
+    return '비밀번호가 성공적으로 변경되었습니다.';
   }
 
   async changePassword(
@@ -247,13 +247,10 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
     confirmPassword: string,
-  ) {
+  ): Promise<string> {
     const user = await this.usersService.findUserByEmail(email);
-    const isPasswordValid = await comparePassword(
-      currentPassword,
-      user.password,
-    );
-    if (!isPasswordValid) {
+
+    if (!(await comparePassword(currentPassword, user.password))) {
       throw new UnauthorizedException('현재 비밀번호가 일치하지 않습니다.');
     }
 
@@ -265,7 +262,7 @@ export class AuthService {
     const hashedPassword = await encryptPassword(newPassword);
     await this.usersService.updatePassword(email, hashedPassword);
 
-    return { message: '비밀번호가 성공적으로 변경되었습니다.' };
+    return '비밀번호가 성공적으로 변경되었습니다.';
   }
 
   async SocialSignup(userId: string, socialSignupDto: SocialSignupDto) {

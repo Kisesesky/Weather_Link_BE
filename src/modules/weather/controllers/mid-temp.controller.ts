@@ -1,7 +1,10 @@
-import { Controller, Get, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MidTempService } from '../service/mid-temp.service';
 import { MidTermTempEntity } from '../entities/mid-term-temp.entity';
+import { WeatherResponseDto } from '../dto/weather-response.dto';
+import { WeatherResponseUtil } from '../utils/response.utils';
+import { MidTermTempResponseDto, MidTermTempWithForecastResponseDto } from '../dto/mid-temp-response.dto';
 
 @ApiTags('날씨 - 중기 기온 예보')
 @Controller('weather/mid-temp')
@@ -17,13 +20,7 @@ export class MidTempController {
     @ApiResponse({
         status: 200,
         description: '중기 기온 예보 데이터 수집 성공',
-        schema: {
-            type: 'object',
-            properties: {
-                success: { type: 'boolean' },
-                message: { type: 'string' }
-            }
-        }
+        type: WeatherResponseDto
     })
     @ApiResponse({ 
         status: 500, 
@@ -37,14 +34,15 @@ export class MidTempController {
         }
     })
     @Get('data')
-    async fetchData() {
+    async fetchData(): Promise<WeatherResponseDto<void>> {
         try {
-            return await this.midTempService.fetchAndSaveMidTempForecasts();
+            await this.midTempService.fetchAndSaveMidTempForecasts();
+            return WeatherResponseUtil.success(undefined, '중기 기온 예보 데이터 수집 성공');
         } catch (error) {
-            throw new HttpException({
-                message: '중기 기온 예보 데이터 수집 실패',
-                error: error.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            return WeatherResponseUtil.error(
+                'API_ERROR',
+                '중기 기온 예보 데이터 수집 실패'
+            );
         }
     }
 
@@ -61,13 +59,7 @@ export class MidTempController {
     @ApiResponse({
         status: 200,
         description: '특정 지역의 중기 기온 예보 데이터 수집 성공',
-        schema: {
-            type: 'object',
-            properties: {
-                success: { type: 'boolean' },
-                message: { type: 'string' }
-            }
-        }
+        type: WeatherResponseDto
     })
     @ApiResponse({ 
         status: 400, 
@@ -91,23 +83,27 @@ export class MidTempController {
         }
     })
     @Get('data/region')
-    async fetchRegionData(@Query('regionCode') regionCode: string) {
+    async fetchRegionData(@Query('regionCode') regionCode: string): Promise<WeatherResponseDto<void>> {
         try {
             if (!regionCode) {
-                throw new HttpException('지역 코드가 필요합니다.', HttpStatus.BAD_REQUEST);
+                return WeatherResponseUtil.error(
+                    'INVALID_PARAMS',
+                    '지역 코드가 필요합니다.'
+                );
             }
-            return await this.midTempService.fetchAndSaveMidTempForecasts(regionCode);
+            await this.midTempService.fetchAndSaveMidTempForecasts(regionCode);
+            return WeatherResponseUtil.success(undefined, '특정 지역의 중기 기온 예보 데이터 수집 성공');
         } catch (error) {
-            throw new HttpException({
-                message: '중기 기온 예보 데이터 수집 실패',
-                error: error.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            return WeatherResponseUtil.error(
+                'API_ERROR',
+                '중기 기온 예보 데이터 수집 실패'
+            );
         }
     }
 
     @ApiOperation({
-        summary: '시도/구군으로 중기 기온 조회',
-        description: '시도와 구군 이름으로 해당 지역의 중기 기온을 조회합니다.'
+        summary: '중기 기온 조회',
+        description: '시도와 구군으로 중기 기온을 조회합니다.'
     })
     @ApiQuery({
         name: 'sido',
@@ -124,25 +120,7 @@ export class MidTempController {
     @ApiResponse({
         status: 200,
         description: '중기 기온 조회 성공',
-        schema: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    location: {
-                        type: 'object',
-                        properties: {
-                            sido: { type: 'string', example: '서울특별시' },
-                            gugun: { type: 'string', example: '강남구' }
-                        }
-                    },
-                    forecastDate: { type: 'string', example: '20250418' },
-                    tmFc: { type: 'string', example: '202504170600' },
-                    minTemp: { type: 'number', example: 8 },
-                    maxTemp: { type: 'number', example: 20 }
-                }
-            }
-        }
+        type: WeatherResponseDto
     })
     @ApiResponse({ 
         status: 404, 
@@ -176,138 +154,97 @@ export class MidTempController {
             }
         }
     })
-    @Get('temp')
+    @Get('search')
     async searchMidTermTempOnly(
         @Query('sido') sido: string,
         @Query('gugun') gugun: string
-    ) {
+    ): Promise<WeatherResponseDto<MidTermTempResponseDto[]>> {
         try {
             if (!sido || !gugun) {
-                throw new HttpException('시도와 구군 이름이 모두 필요합니다.', HttpStatus.BAD_REQUEST);
+                return WeatherResponseUtil.error(
+                    'INVALID_PARAMS',
+                    '시도와 구군 이름이 모두 필요합니다.'
+                );
             }
-            return await this.midTempService.getMidTermTempOnly(sido, gugun);
+
+            const result = await this.midTempService.getMidTermTempOnly(sido, gugun);
+            if (!result || result.length === 0) {
+                return WeatherResponseUtil.error(
+                    'NOT_FOUND',
+                    '지역을 찾을 수 없습니다.'
+                );
+            }
+
+            const response: MidTermTempResponseDto[] = result.map(forecast => ({
+                location: {
+                    sido,
+                    gugun
+                },
+                forecastDate: forecast.forecastDate,
+                tmFc: forecast.tmFc,
+                minTemp: forecast.minTemp,
+                maxTemp: forecast.maxTemp
+            }));
+
+            return WeatherResponseUtil.success(response, '중기 기온 조회 성공');
         } catch (error) {
-            if (error.message.includes('regId를 찾을 수 없습니다')) {
-                throw new HttpException({
-                    message: '지역을 찾을 수 없습니다.',
-                    error: error.message
-                }, HttpStatus.NOT_FOUND);
-            }
-            throw new HttpException({
-                message: '중기 기온 데이터 조회 실패',
-                error: error.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            return WeatherResponseUtil.error(
+                'API_ERROR',
+                '중기 기온 데이터 조회 실패'
+            );
         }
     }
 
+    @Get('search/forecast')
     @ApiOperation({
-        summary: '시도/구군으로 중기 기온과 예보 조회',
-        description: '시도와 구군 이름으로 해당 지역의 중기 기온과 날씨 예보를 함께 조회합니다.'
-    })
-    @ApiQuery({
-        name: 'sido',
-        description: '시도 이름 (예: 서울특별시)',
-        required: true,
-        type: String
-    })
-    @ApiQuery({
-        name: 'gugun',
-        description: '구군 이름 (예: 강남구)',
-        required: true,
-        type: String
+        summary: '중기 기온과 예보 조회',
+        description: '시도와 구군으로 중기 기온과 예보를 조회합니다.'
     })
     @ApiResponse({
         status: 200,
         description: '중기 기온과 예보 조회 성공',
-        schema: {
-            type: 'object',
-            properties: {
-                location: {
-                    type: 'object',
-                    properties: {
-                        sido: { type: 'string', example: '서울특별시' },
-                        gugun: { type: 'string', example: '강남구' }
-                    }
-                },
-                forecastDate: { type: 'string', example: '20250418' },
-                tmFc: { type: 'string', example: '202504170600' },
-                minTemp: { type: 'number', example: 8 },
-                maxTemp: { type: 'number', example: 20 },
-                forecast: {
-                    type: 'object',
-                    properties: {
-                        morning: {
-                            type: 'object',
-                            properties: {
-                                skyAndPre: { type: 'string', example: '맑음' },
-                                rnst: { type: 'string', example: '20' }
-                            }
-                        },
-                        afternoon: {
-                            type: 'object',
-                            properties: {
-                                skyAndPre: { type: 'string', example: '구름많음' },
-                                rnst: { type: 'string', example: '30' }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        type: WeatherResponseDto
     })
-    @ApiResponse({ 
-        status: 404, 
-        description: '지역을 찾을 수 없습니다.',
-        schema: {
-            type: 'object',
-            properties: {
-                message: { type: 'string', example: '지역을 찾을 수 없습니다.' },
-                error: { type: 'string', example: '해당하는 regId를 찾을 수 없습니다. sido: 서울특별시, gugun: 강남구' }
-            }
-        }
-    })
-    @ApiResponse({ 
-        status: 400, 
-        description: '잘못된 요청',
-        schema: {
-            type: 'object',
-            properties: {
-                message: { type: 'string', example: '시도와 구군 이름이 모두 필요합니다.' }
-            }
-        }
-    })
-    @ApiResponse({ 
-        status: 500, 
-        description: '서버 에러',
-        schema: {
-            type: 'object',
-            properties: {
-                message: { type: 'string', example: '중기 기온과 예보 데이터 조회 실패' },
-                error: { type: 'string' }
-            }
-        }
-    })
-    @Get('search')
     async searchMidTermTempWithForecast(
         @Query('sido') sido: string,
         @Query('gugun') gugun: string
-    ) {
+    ): Promise<WeatherResponseDto<MidTermTempWithForecastResponseDto>> {
         try {
             if (!sido || !gugun) {
-                throw new HttpException('시도와 구군 이름이 모두 필요합니다.', HttpStatus.BAD_REQUEST);
+                return WeatherResponseUtil.error(
+                    'INVALID_PARAMS',
+                    '시도와 구군 이름이 모두 필요합니다.'
+                );
             }
-            return await this.midTempService.getMidTermTempWithForecast(sido, gugun);
+
+            const result = await this.midTempService.getMidTermTempWithForecast(sido, gugun);
+            if (!result || !result.length) {
+                return WeatherResponseUtil.error(
+                    'NOT_FOUND',
+                    '지역을 찾을 수 없습니다.'
+                );
+            }
+
+            // 첫 번째 예보 데이터만 사용 (가장 최근 데이터)
+            const latestForecast = result[0];
+            const response: MidTermTempWithForecastResponseDto = {
+                location: {
+                    sido,
+                    gugun
+                },
+                forecastDate: latestForecast.forecastDate,
+                tmFc: latestForecast.tmFc,
+                minTemp: latestForecast.minTemp,
+                maxTemp: latestForecast.maxTemp,
+                forecast: latestForecast.forecast
+            };
+
+            return WeatherResponseUtil.success(response, '중기 기온과 예보 조회 성공');
         } catch (error) {
-            if (error.message.includes('regId를 찾을 수 없습니다')) {
-                throw new HttpException({
-                    message: '지역을 찾을 수 없습니다.',
-                    error: error.message
-                }, HttpStatus.NOT_FOUND);
-            }
-            throw new HttpException({
-                message: '중기 기온과 예보 데이터 조회 실패',
-                error: error.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            return WeatherResponseUtil.error(
+                'API_ERROR',
+                '중기 기온과 예보 데이터 조회 실패'
+            );
         }
     }
 
@@ -318,12 +255,7 @@ export class MidTempController {
     @ApiResponse({
         status: 200,
         description: '오래된 데이터 삭제 성공',
-        schema: {
-            type: 'object',
-            properties: {
-                message: { type: 'string' }
-            }
-        }
+        type: WeatherResponseDto
     })
     @ApiResponse({ 
         status: 500, 
@@ -337,15 +269,15 @@ export class MidTempController {
         }
     })
     @Get('cleanup')
-    async cleanupOldData() {
+    async cleanupOldData(): Promise<WeatherResponseDto<void>> {
         try {
             await this.midTempService.deleteOldForecastsManually();
-            return { message: '오래된 기온 예보 데이터가 삭제되었습니다.' };
+            return WeatherResponseUtil.success(undefined, '오래된 기온 예보 데이터가 삭제되었습니다.');
         } catch (error) {
-            throw new HttpException({
-                message: '오래된 데이터 삭제 실패',
-                error: error.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            return WeatherResponseUtil.error(
+                'API_ERROR',
+                '오래된 데이터 삭제 실패'
+            );
         }
     }
 }
