@@ -1,31 +1,22 @@
 import { HttpService } from "@nestjs/axios";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";
-import { Repository } from "typeorm";
 import { PrecipitationType, SkyCondition } from "../utils/weather-conditions";
-import { RegionEntity } from '../../locations/entities/region.entity';
 import { WeatherConfigService } from "src/config/weather/config.service";
+import { RegionUtils } from './../utils/region.util';
 
 @Injectable()
 export class OnedayForecastService {
   private readonly logger = new Logger(OnedayForecastService.name);
     constructor(
-        @InjectRepository(RegionEntity)
-        private readonly regionRepository: Repository<RegionEntity>,
         private readonly weatherConfigService: WeatherConfigService,
         private httpService: HttpService,
+        private regionUtils: RegionUtils
     ) {}
 
     async getForecastByRegionName(sido: string, gugun?: string) {
-        const region = await this.regionRepository
-            .createQueryBuilder('region')
-            .where('region.name = :sido', { sido })
-            .orWhere('region.name = :gugun', { gugun })
-            .andWhere('region.nx IS NOT NULL')
-            .andWhere('region.ny IS NOT NULL')
-            .getOne();
-
+        const region = await this.regionUtils.findRegionWithNxNyByName(sido, gugun)
+            
         if (!region) {
             throw new NotFoundException('해당 지역의 날씨 정보를 찾을 수 없습니다.');
         }

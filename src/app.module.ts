@@ -16,6 +16,7 @@ import { AlertsModule } from './modules/alerts/alert.module';
 import { InitService } from './init/init.service';
 import { LocationsService } from './modules/locations/service/locations.service';
 import { RegionService } from './modules/locations/service/region.service';
+import { DbConfigService } from './config/db/config.service';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { RegionService } from './modules/locations/service/region.service';
     AlertsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, InitService, LocationsService, RegionService],
+  providers: [AppService, InitService, LocationsService, RegionService, DbConfigService],
 })
 export class AppModule {
   constructor(private readonly initService: InitService) {}

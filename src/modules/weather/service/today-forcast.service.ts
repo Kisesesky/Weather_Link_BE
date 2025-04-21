@@ -10,27 +10,21 @@ import { TodayForecastEntity } from '../entities/today-forecast.entity';
 import { Cron } from "@nestjs/schedule";
 import { ForecastTimeSlot } from "../interface/weather-interface";
 import { firstValueFrom } from "rxjs";
+import { RegionUtils } from './../utils/region.util';
 
 @Injectable()
 export class TodayForecastService {
     private readonly logger = new Logger(TodayForecastService.name);
     constructor(
-        @InjectRepository(RegionEntity)
-        private readonly regionRepository: Repository<RegionEntity>,
         @InjectRepository(TodayForecastEntity)
         private readonly todayForecastRepository: Repository<TodayForecastEntity>,
         private readonly weatherConfigService: WeatherConfigService,
         private httpService: HttpService,
+        private regionUtils: RegionUtils,
     ) {}
 
     async getForecastByRegionName(sido: string, gugun?: string) {
-        const region = await this.regionRepository
-            .createQueryBuilder('region')
-            .where('region.name = :sido', { sido })
-            .orWhere('region.name = :gugun', { gugun })
-            .andWhere('region.nx IS NOT NULL')
-            .andWhere('region.ny IS NOT NULL')
-            .getOne();
+        const region = await this.regionUtils.findRegionWithNxNyByName(sido, gugun)
 
         if (!region) {
             throw new NotFoundException('해당 지역의 날씨 정보를 찾을 수 없습니다.');
@@ -121,13 +115,7 @@ export class TodayForecastService {
         try {
             // 기존 오늘의 예보 데이터 삭제
             await this.todayForecastRepository.clear();
-
-            const regions = await this.regionRepository
-                .createQueryBuilder('region')
-                .where('region.nx IS NOT NULL')
-                .andWhere('region.ny IS NOT NULL')
-                .getMany();
-
+            const regions = await this.regionUtils.findRegions()
             this.logger.log(`Starting to collect weather data for ${regions.length} regions`);
 
             for (const region of regions) {
