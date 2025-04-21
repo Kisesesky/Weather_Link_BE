@@ -81,6 +81,7 @@ export class UsersService {
     // 사용자 생성
     const user = this.usersRepository.create({
       ...restDto,
+      registerType: RegisterType.EMAIL,
       profileImage: profileImageUrl,
       termsAgreed,
       locationAgreed,
@@ -109,8 +110,19 @@ export class UsersService {
       console.log(`새로운 채팅방 참여 중 오류 발생: ${error.message}`);
     }
 
-    const { password, ...rest } = user;
-    return rest;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      profileImage: user.profileImage,
+      registerType: user.registerType,
+      theme: user.theme,
+      location: {
+        sido: user.location.sido,
+        gugun: user.location.gugun,
+        dong: user.location.dong,
+      },
+    };
   }
 
   async getProfileImageUrl(

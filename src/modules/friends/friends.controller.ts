@@ -22,6 +22,8 @@ import { RespondFriendRequestDto } from './dto/response-friend-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
+import { RemoveFriendDto } from './dto/remove-friend.dto';
+import { SearchFriendsDto } from './dto/search-friends.dto';
 
 @ApiTags('친구 관리')
 @ApiBearerAuth()
@@ -157,6 +159,7 @@ export class FriendsController {
 
   @Delete('remove')
   @ApiOperation({ summary: '친구 삭제' })
+  @ApiBody({ type: RemoveFriendDto })
   @ApiResponse({
     status: 200,
     description: '친구 삭제 성공',
@@ -164,9 +167,12 @@ export class FriendsController {
   })
   async removeFriend(
     @Req() req,
-    @Body() body: { friendId: string },
+    @Body() removeFriendDto: RemoveFriendDto,
   ): Promise<ResponseDto> {
-    await this.friendsService.removeFriend(req.user.id, body.friendId);
+    await this.friendsService.removeFriend(
+      req.user.id,
+      removeFriendDto.friendId,
+    );
     return new ResponseDto({
       success: true,
       message: '친구 삭제 성공',
@@ -175,9 +181,6 @@ export class FriendsController {
 
   @Get('search/friends')
   @ApiOperation({ summary: '친구 목록에서 검색' })
-  @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
-  @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
-  @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
   @ApiResponse({
     status: 200,
     description: '친구 검색 성공',
@@ -185,13 +188,12 @@ export class FriendsController {
   })
   async searchFriends(
     @Req() req,
-    @Query('name') name: string,
-    @Query() paginationDto: PaginationDto,
+    @Query() searchFriendsDto: SearchFriendsDto,
   ): Promise<ResponseDto> {
     const data = await this.friendsService.searchFriends(
       req.user.id,
-      name,
-      paginationDto,
+      searchFriendsDto.name,
+      searchFriendsDto,
     );
     return new ResponseDto({
       success: true,

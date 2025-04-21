@@ -53,7 +53,6 @@ export class AuthController {
     @UploadedFile() profileImage?: Express.Multer.File,
   ): Promise<ResponseDto<ResponseSignUpDto>> {
     try {
-      signUpDto.registerType = RegisterType.EMAIL;
       const user = await this.authService.signUp(signUpDto, profileImage);
       return new ResponseDto({
         success: true,
