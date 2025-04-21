@@ -17,7 +17,7 @@ import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
 import { LoginLogsModule } from '../login-logs/login-logs.module';
-import { RedisCacheModule } from 'src/config/cache/cache.module';
+import { RedisCacheModule } from 'src/common/cache/redis-cache.module';
 import { LocationsModule } from '../locations/locations.module';
 
 @Module({
