@@ -16,6 +16,7 @@ import { UpdateAlertSettingDto } from './dto/update-alert-setting.dto';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 @ApiTags('알림 설정')
 @ApiBearerAuth()
@@ -35,8 +36,16 @@ export class AlertController {
   })
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
-  create(@RequestUser() user: User, @Body() dto: CreateAlertSettingDto) {
-    return this.alertsService.create(user, dto);
+  async create(
+    @RequestUser() user: User,
+    @Body() dto: CreateAlertSettingDto,
+  ): Promise<ResponseDto> {
+    const data = await this.alertsService.create(user, dto);
+    return new ResponseDto({
+      success: true,
+      message: '알림 설정이 성공적으로 생성되었습니다.',
+      data,
+    });
   }
 
   @Get()
@@ -49,8 +58,13 @@ export class AlertController {
     description: '알림 설정 목록을 성공적으로 조회했습니다.',
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
-  findAll(@RequestUser() user: User) {
-    return this.alertsService.findAllByUser(user.id);
+  async findAll(@RequestUser() user: User): Promise<ResponseDto> {
+    const data = await this.alertsService.findAllByUser(user.id);
+    return new ResponseDto({
+      success: true,
+      message: '알림 설정 목록을 성공적으로 조회했습니다.',
+      data,
+    });
   }
 
   @Patch(':id')
@@ -65,8 +79,16 @@ export class AlertController {
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
   @ApiResponse({ status: 404, description: '알림 설정을 찾을 수 없습니다.' })
-  update(@Param('id') id: string, @Body() dto: UpdateAlertSettingDto) {
-    return this.alertsService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateAlertSettingDto,
+  ): Promise<ResponseDto> {
+    const data = await this.alertsService.update(id, dto);
+    return new ResponseDto({
+      success: true,
+      message: '알림 설정이 성공적으로 수정되었습니다.',
+      data,
+    });
   }
 
   @Delete(':id')
@@ -80,7 +102,11 @@ export class AlertController {
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
   @ApiResponse({ status: 404, description: '알림 설정을 찾을 수 없습니다.' })
-  remove(@Param('id') id: string) {
-    return this.alertsService.remove(id);
+  async remove(@Param('id') id: string): Promise<ResponseDto> {
+    await this.alertsService.remove(id);
+    return new ResponseDto({
+      success: true,
+      message: '알림 설정이 성공적으로 삭제되었습니다.',
+    });
   }
 }
