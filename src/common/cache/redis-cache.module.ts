@@ -11,11 +11,11 @@ import { RedisConfigModule } from 'src/config/redis/config.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         store: redisStore,
-        host: configService.get('REDIS_HOST', 'localhost'),
-        port: configService.get('REDIS_PORT', 6379),
-        password: configService.get('REDIS_PASSWORD', ''),
-        ttl: configService.get('REDIS_TTL', 120), //2분
-        max: configService.get('REDIS_MAX', 100), //최대 캐시 항목 수
+        host: configService.get('REDIS_HOST'),
+        port: configService.get('REDIS_PORT'),
+        password: configService.get('REDIS_PASSWORD'),
+        ttl: configService.get('REDIS_TTL'),
+        max: configService.get('REDIS_MAX')
       }),
       inject: [ConfigService],
     }),
