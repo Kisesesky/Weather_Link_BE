@@ -3,7 +3,6 @@ import { WeatherService } from '../service/weather.service';
 import { WeatherAirService } from '../service/weather-air.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MidForecastService } from '../service/mid-forecast.service';
-import { TransformedMidTermForecastDto } from '../dto/mid-forecast.dto';
 import * as moment from 'moment';
 import { DailyForecastService } from '../service/daily-forecast.service';
 import { TodayForecastService } from '../service/today-forcast.service';

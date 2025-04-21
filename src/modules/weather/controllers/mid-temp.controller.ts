@@ -1,7 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MidTempService } from '../service/mid-temp.service';
-import { MidTermTempEntity } from '../entities/mid-term-temp.entity';
 import { WeatherResponseDto } from '../dto/weather-response.dto';
 import { WeatherResponseUtil } from '../utils/response.utils';
 import { MidTermTempResponseDto, MidTermTempWithForecastResponseDto } from '../dto/mid-temp-response.dto';
