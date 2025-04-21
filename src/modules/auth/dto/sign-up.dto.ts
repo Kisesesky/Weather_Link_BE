@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
 import { LocationsEntity } from './../../locations/entities/location.entity';
+import { Type } from 'class-transformer';
 
 export class SignUpDto {
   @ApiProperty({
@@ -56,8 +57,9 @@ export class SignUpDto {
   @IsOptional()
   socialId?: string;
 
+  @IsOptional()
   @IsEnum(RegisterType)
-  registerType: RegisterType;
+  registerType?: RegisterType;
 
   @ApiProperty({
     type: Boolean,
@@ -65,6 +67,7 @@ export class SignUpDto {
     required: true,
   })
   @IsBoolean()
+  @Type(() => Boolean)
   termsAgreed: boolean;
 
   @ApiProperty({
@@ -73,6 +76,7 @@ export class SignUpDto {
     required: true,
   })
   @IsBoolean()
+  @Type(() => Boolean)
   locationAgreed: boolean;
 
   @ApiProperty({

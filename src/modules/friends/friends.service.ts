@@ -106,33 +106,22 @@ export class FriendsService {
 
   // 친구로 등록된 전체 목록 조회
   async getFriendsList(userId: string, paginationDto: PaginationDto) {
-    const friends = await this.friendRepository.find({
-      where: [
-        {
-          sender: { id: userId },
-          status: 'accepted',
-        },
-        {
-          receiver: { id: userId },
-          status: 'accepted',
-        },
-      ],
+    const whereCondition = [
+      {
+        sender: { id: userId },
+        status: 'accepted' as const,
+      },
+      {
+        receiver: { id: userId },
+        status: 'accepted' as const,
+      },
+    ];
+
+    const [friends, total] = await this.friendRepository.findAndCount({
+      where: whereCondition,
       relations: ['sender', 'receiver'],
       skip: paginationDto.skip,
       take: paginationDto.take,
-    });
-
-    const total = await this.friendRepository.count({
-      where: [
-        {
-          sender: { id: userId },
-          status: 'accepted',
-        },
-        {
-          receiver: { id: userId },
-          status: 'accepted',
-        },
-      ],
     });
 
     return {
@@ -151,37 +140,24 @@ export class FriendsService {
     name: string,
     paginationDto: PaginationDto,
   ) {
-    const friends = await this.friendRepository.find({
-      where: [
-        {
-          sender: { id: userId },
-          receiver: { name: ILike(`%${name}%`) },
-          status: 'accepted',
-        },
-        {
-          receiver: { id: userId },
-          sender: { name: ILike(`%${name}%`) },
-          status: 'accepted',
-        },
-      ],
+    const whereCondition = [
+      {
+        sender: { id: userId },
+        receiver: { name: ILike(`%${name}%`) },
+        status: 'accepted' as const,
+      },
+      {
+        receiver: { id: userId },
+        sender: { name: ILike(`%${name}%`) },
+        status: 'accepted' as const,
+      },
+    ];
+
+    const [friends, total] = await this.friendRepository.findAndCount({
+      where: whereCondition,
       relations: ['sender', 'receiver'],
       skip: paginationDto.skip,
       take: paginationDto.take,
-    });
-
-    const total = await this.friendRepository.count({
-      where: [
-        {
-          sender: { id: userId },
-          receiver: { name: ILike(`%${name}%`) },
-          status: 'accepted',
-        },
-        {
-          receiver: { id: userId },
-          sender: { name: ILike(`%${name}%`) },
-          status: 'accepted',
-        },
-      ],
     });
 
     return {

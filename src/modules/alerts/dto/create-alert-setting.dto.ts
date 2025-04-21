@@ -26,15 +26,6 @@ export class CreateAlertSettingDto {
   threshold: number | string;
 
   @ApiProperty({
-    description: '측정 단위',
-    example: '°C',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  unit: '°C' | '%' | 'm/s' | 'μg/m³';
-
-  @ApiProperty({
     description: '알림 조건 (이상, 이하, 같음)',
     example: 'above',
   })
