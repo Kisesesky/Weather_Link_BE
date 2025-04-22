@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Post, Query } from "@nestjs/common";
+import { Controller, Delete, Post, Query } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { WeatherResponseDto } from "../dto/weather-response.dto";
 import { DailyForecastService } from "../service/daily-forecast.service";
@@ -8,8 +8,7 @@ import { TodayForecastService } from "../service/today-forcast.service";
 import { WeatherAirService } from "../service/weather-air.service";
 import { WeatherResponseUtil } from "../utils/response.utils";
 
-
-@ApiTags('날씨 서비스 - 수집')
+@ApiTags('Test - 날씨 서비스 - 수집')
 @Controller('weather/collector')
 export class WeatherCollectiorController {
   constructor(
@@ -101,6 +100,93 @@ export class WeatherCollectiorController {
       );
     }
   }
+
+  @ApiOperation({ summary: '특정지역 현재 날씨 정보 수집' })
+  @ApiResponse({
+    status: 200,
+    description: '현재 날씨 정보',
+    type: WeatherResponseDto
+  })
+  @ApiQuery({
+    name: 'sido',
+    description: '시/도 입력',
+    example: '서울특별시',
+  })
+  @ApiQuery({
+    name: 'gugun',
+    description: '구/군 입력',
+    example: '강남구',
+  })
+  @ApiQuery({
+    name: 'dong',
+    description: '동 입력',
+    example: '역삼1동',
+  })
+  @Post('currentWeather')
+  async getLocationWeather(
+    @Query('sido') sido: string,
+    @Query('gugun') gugun?: string,
+    @Query('dong') dong?: string,
+  ): Promise<WeatherResponseDto<any>> {
+    try {
+      const data = await this.dailyForecastService.collectLocationWeather(sido, gugun, dong);
+      return WeatherResponseUtil.success(data, '현재 날씨 정보 수집 성공');
+    } catch (error) {
+      return WeatherResponseUtil.error(
+        'API_ERROR',
+        '현재 날씨 정보 수집 실패'
+      );
+    }
+  }
+
+  @ApiOperation({ summary: '지역별 일간 예보 수집' })
+    @ApiQuery({ 
+      name: 'sido', 
+      type: 'string',
+      example: '서울특별시', 
+      required: true,
+      description: '시/도 이름 (예: 서울특별시)' 
+    })
+    @ApiQuery({ 
+      name: 'gugun', 
+      type: 'string',
+      example: '강남구', 
+      required: false,
+      description: '구/군 이름 (예: 강남구)' 
+    })
+    @ApiResponse({ 
+      status: 200, 
+      description: '지역별 일간 예보 조회 성공',
+      type: WeatherResponseDto
+    })
+    @ApiResponse({ status: 404, description: '해당 지역의 날씨 정보를 찾을 수 없습니다.' })
+    @Post('dailyforecast')
+    async getForecast(
+      @Query('sido') sido: string,
+      @Query('gugun') gugun?: string,
+    ): Promise<WeatherResponseDto<any>> {
+      try {
+        const forecast = await this.todayForecastService.getForecastByRegionName(sido, gugun);
+        if (!forecast) {
+          return WeatherResponseUtil.error(
+            'NOT_FOUND',
+            '해당 지역의 날씨 정보를 찾을 수 없습니다.'
+          );
+        }
+        return WeatherResponseUtil.success({
+          location: {
+            sido,
+            gugun,
+          },
+          forecast,
+        }, '지역별 일간 예보 수집 성공');
+      } catch (error) {
+        return WeatherResponseUtil.error(
+          'API_ERROR',
+          '지역별 일간 예보 수집 실패'
+        );
+      }
+    }
 
   @ApiOperation({ summary: '오늘 날씨 예보 정보 수집' })
   @ApiResponse({

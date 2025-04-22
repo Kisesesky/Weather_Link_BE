@@ -18,7 +18,7 @@ export type Province = {
 export async function seedRegions(dataSource: DataSource) {
   const regionRepository = dataSource.getRepository(RegionEntity);
 
-  for (const province of REGIONS_MAP) {
+  for (const province of REGIONS_MAPS) {
     const provinceEntity = regionRepository.create({
       name: province.name,
       type: 'PROVINCE',
@@ -48,7 +48,7 @@ export async function seedRegions(dataSource: DataSource) {
 }
 
 
-export const REGIONS_MAP: Province[] = [
+export const REGIONS_MAPS: Province[] = [
   {
     name: "서울특별시",
     cities: [

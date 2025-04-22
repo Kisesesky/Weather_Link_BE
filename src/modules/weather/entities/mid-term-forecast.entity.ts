@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { RegionEntity } from 'src/modules/locations/entities/region.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 
 @Entity()
 export class MidTermForecastEntity {
@@ -7,6 +8,9 @@ export class MidTermForecastEntity {
 
   @Column()
   regId: string;
+
+  @ManyToOne(() => RegionEntity, { eager: true })
+  region: RegionEntity;
 
   @Column()
   forecastDate: string;
