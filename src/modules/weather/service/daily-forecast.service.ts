@@ -97,7 +97,7 @@ export class DailyForecastService {
   }
 
   // 모든 지역의 날씨 데이터 수집 및 저장
-  // @Cron('0 */1 * * *') //1시간 간격 자동수집
+  @Cron('0 */1 * * *') //1시간 간격 자동수집
   async collectAllRegionsWeather() {
     try {
       // 모든 region 데이터 조회 (nx, ny가 있는 것만)
@@ -230,6 +230,32 @@ export class DailyForecastService {
         throw error;
       }
       this.logger.error(`날씨 데이터 수집 중 오류 발생: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // 시도/구군으로 현재 날씨 조회
+  async getCurrentWeatherByRegionName(sido: string, gugun?: string) {
+    try {
+      // 1. LocationEntity 찾기
+      const location = await this.locationsRepository
+        .createQueryBuilder('location')
+        .where('location.sido = :sido', { sido });
+
+      if (gugun) {
+        location.andWhere('location.gugun = :gugun', { gugun });
+      }
+
+      const locationEntity = await location.getOne();
+      
+      if (!locationEntity) {
+        throw new NotFoundException('해당 지역을 찾을 수 없습니다.');
+      }
+
+      // 2. 현재 날씨 조회
+      return this.getCurrentWeather(locationEntity.nx, locationEntity.ny);
+    } catch (error) {
+      this.logger.error(`날씨 데이터 요청 실패: ${error.message}`);
       throw error;
     }
   }

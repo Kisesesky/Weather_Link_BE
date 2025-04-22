@@ -75,7 +75,7 @@ services:
       - "80:80"
       - "443:443" #HTTPS 필요시 추가
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - nestjs-app
 volumes:

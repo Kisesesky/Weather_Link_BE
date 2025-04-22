@@ -19,7 +19,7 @@ import { HttpModule } from '@nestjs/axios';
 import { TodayForecastService } from './service/today-forcast.service';
 import { TodayForecastEntity } from './entities/today-forecast.entity';
 import { WeatherCollectiorController } from './controllers/weather-collector.controller';
-import { RegionUtils } from './utils/region.util';
+import { WeatherResponseController } from './controllers/weather-response.controller';
 
 @Module({
   imports: [
@@ -39,6 +39,7 @@ import { RegionUtils } from './utils/region.util';
     WeatherController,
     MidTempController,
     WeatherCollectiorController,
+    WeatherResponseController,
   ],
   providers: [
     WeatherService,
@@ -49,7 +50,7 @@ import { RegionUtils } from './utils/region.util';
     DailyForecastService,
     TodayForecastService,
     WeatherCollectiorController,
-    RegionUtils,
+    WeatherResponseController,
   ],
   exports: [WeatherAirService, TodayForecastService],
 })

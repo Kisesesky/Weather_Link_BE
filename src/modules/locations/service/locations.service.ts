@@ -98,32 +98,47 @@ export class LocationsService {
   async getSidoList() {
     const rows = await this.locationsRepository
       .createQueryBuilder('location')
-      .select('DISTINCT location.sido', 'sido')
+      .select(['location.sido', 'location.id'])
+      .distinctOn(['location.sido'])
+      .orderBy('location.sido', 'ASC')
       .getRawMany();
-    return rows.map((r) => r.sido);
+  
+    return rows.map((r) => ({
+      sido: r.location_sido,
+      id: r.location_id,
+    }));
   }
 
   async getGugunList(sido: string) {
     const rows = await this.locationsRepository
       .createQueryBuilder('location')
-      .select('DISTINCT location.gugun', 'gugun')
+      .select(['location.gugun', 'location.id'])
+      .distinctOn(['location.gugun'])
       .where('location.sido = :sido', { sido })
       .andWhere('location.gugun IS NOT NULL')
+      .orderBy('location.gugun', 'ASC')
       .getRawMany();
-    return rows.map((r) => r.gugun);
+  
+    return rows.map((r) => ({
+      gugun: r.location_gugun,
+      id: r.location_id,
+    }));
   }
 
   async getDongList(sido: string, gugun: string) {
     const rows = await this.locationsRepository
       .createQueryBuilder('location')
-      .select('DISTINCT location.dong', 'dong')
-      .where('location.sido = :sido AND location.gugun = :gugun', {
-        sido,
-        gugun,
-      })
+      .select(['location.dong', 'location.id'])
+      .distinctOn(['location.dong'])
+      .where('location.sido = :sido AND location.gugun = :gugun', { sido, gugun })
       .andWhere('location.dong IS NOT NULL')
+      .orderBy('location.dong', 'ASC')
       .getRawMany();
-    return rows.map((r) => r.dong);
+  
+    return rows.map((r) => ({
+      dong: r.location_dong,
+      id: r.location_id,
+    }));
   }
 
   async getLocationId(sido: string, gugun: string, dong: string) {
@@ -250,7 +265,7 @@ export class LocationsService {
     const query = this.locationsRepository
       .createQueryBuilder('location')
       .select('DISTINCT location.gugun', 'gugun')
-      .where('location.level1 = :sido', { sido });
+      .where('location.sido = :sido', { sido });
 
     const guguns = await query.getRawMany();
     const result = guguns.map((g) => g.gugun).filter(Boolean);
