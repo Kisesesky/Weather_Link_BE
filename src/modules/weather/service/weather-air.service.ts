@@ -83,6 +83,25 @@ export class WeatherAirService {
     return results;
   }
 
+  async findLocationByFullName(fullName: string): Promise<LocationsEntity | null> {
+    const [sido, gugun] = fullName.split(' ');
+    
+    return this.locationRepository.findOne({
+      where: {
+        sido,
+        gugun
+      }
+    });
+  }
+
+  async findLocationByRegionName(sido: string): Promise<LocationsEntity | null> {
+    return this.locationRepository.findOne({
+      where: {
+        sido,
+      }
+    });
+  }
+
   async getAirQualityById(id: string) {
     const location = await this.locationRepository.findOne({ where: { id } });
 

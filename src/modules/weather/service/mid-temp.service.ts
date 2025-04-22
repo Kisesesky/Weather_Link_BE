@@ -138,8 +138,10 @@ export class MidTempService {
     }
 
     private getRegId(sido: string, gugun: string): string | undefined {
-        this.logger.debug(`Looking up regId for sido: ${sido}, gugun: ${gugun}`);
-        return this.locationsService.findRegIdTemp(sido, gugun);
+        // 시도와 구군에서 상세 주소(ex: 분당구)를 제외하고 regId 찾기
+        const mainGugun = gugun?.split(/[\s,]+/)[0]; // 첫 번째 구군만 사용 (예: "성남시분당구" -> "성남시")
+        this.logger.debug(`Looking up regId for sido: ${sido}, mainGugun: ${mainGugun}`);
+        return this.locationsService.findRegIdTemp(sido, mainGugun);
     }
 
     async getForecastsByRegion(regId: string) {
@@ -158,7 +160,16 @@ export class MidTempService {
     }
 
     public async getMidTermTempOnly(sido: string, gugun: string) {
-        const regId = this.getRegId(sido, gugun);
+        // 원본 주소 저장
+        const originalLocation = {
+            sido,
+            gugun
+        };
+
+        // 구군에서 첫 번째 부분만 추출 (예: "성남시분당구" -> "성남시")
+        const mainGugun = this.getMainRegion(gugun);
+        
+        const regId = this.getRegId(sido, mainGugun);
         
         if (!regId) {
             throw new Error(`해당하는 regId를 찾을 수 없습니다. sido: ${sido}, gugun: ${gugun}`);
@@ -170,16 +181,26 @@ export class MidTempService {
             tempData = await this.getForecastsByRegion(regId);
         }
 
-        return tempData.map(temp => ({
-            location: {
-                sido,
-                gugun
-            },
-            forecastDate: temp.forecastDate,
-            tmFc: temp.tmFc,
-            minTemp: temp.minTemp,
-            maxTemp: temp.maxTemp
-        }));
+        // 새로운 응답 형식
+        return {
+            location: `${originalLocation.sido} ${originalLocation.gugun}`,
+            forecasts: tempData.map(temp => ({
+                forecastDate: temp.forecastDate,
+                minTemp: temp.minTemp,
+                maxTemp: temp.maxTemp
+            })).sort((a, b) => a.forecastDate.localeCompare(b.forecastDate)) // 날짜순 정렬
+        };
+    }
+
+    private getMainRegion(gugun: string): string {
+        // 구군명이 6글자일 때만 "시"나 "군"을 기준으로 추출
+        if (gugun.length === 6) {
+            // "시"나 "군"을 기준으로 첫 번째 단위만 추출
+            return gugun.split(/(시|군)/)[0] + (gugun.includes('군') ? '군' : '시');
+        }
+        
+        // 그 외에는 그대로 반환 (경기도, 강원도 등)
+        return gugun;
     }
 
     public async getMidTermTempWithForecast(sido: string, gugun: string) {
@@ -196,14 +217,9 @@ export class MidTempService {
             tempData = await this.getForecastsByRegion(regId);
         }
 
-        // 예보 데이터 조회
         const forecastData = await this.midForecastService.transformMidTermForecast(sido, gugun);
-
-        // 날짜별로 데이터 합치기
         const combinedData = tempData.map(temp => {
-            // 예보 데이터에서 같은 날짜의 오전/오후 데이터를 모두 찾기
             const forecasts = forecastData.filter(f => f.forecastDate === temp.forecastDate);
-            
             const response: any = {
                 location: {
                     sido,
@@ -224,10 +240,8 @@ export class MidTempService {
                     afternoon: forecasts.find(f => f.forecastTimePeriod === '오후')
                 };
             }
-
             return response;
         });
-
         return combinedData;
     }
 }

@@ -10,6 +10,7 @@ import { MidTermForecastEntity } from "../entities/mid-term-forecast.entity";
 import { TransformedMidTermForecastDto } from "../dto/mid-forecast.dto";
 import { WeatherConfigService } from "src/config/weather/config.service";
 import { LocationsService } from "src/modules/locations/service/locations.service";
+import { REGION_MAPS } from "src/modules/locations/utils/region-map";
 
 @Injectable()
 export class MidForecastService {
@@ -132,6 +133,17 @@ export class MidForecastService {
       this.logger.error('데이터 수집 실패:', err.message);
       throw err;
     }
+  }
+  private findRegIdBySido(sido: string): string | null {
+    const normalizedSido = sido.replace(/(특별시|광역시|특별자치시|도|특별자치도)$/, '');
+    
+    for (const mapping of REGION_MAPS) {
+      const region = mapping.regions.find(r => r.sido === normalizedSido);
+      if (region) {
+        return mapping.regId;
+      }
+    }
+    return null;
   }
 
   async getForecastsByRegion(regId: string) {
