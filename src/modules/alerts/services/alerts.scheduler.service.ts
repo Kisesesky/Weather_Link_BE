@@ -8,13 +8,12 @@ import { WeatherAirService } from '../../weather/service/weather-air.service';
 
 // 날씨 데이터 타입 정의
 interface WeatherData {
-  temperature?: number; // TodayForecastService
-  humidity?: number; // TodayForecastService
-  windSpeed?: number; // TodayForecastService
-  precipitationType?: string; // TodayForecastService
-  skyCondition?: string; // TodayForecastService
-  pm10Value?: number; // WeatherAirService
-  // pm25Value?: number;     // WeatherAirService
+  temperature?: number;
+  humidity?: number;
+  windSpeed?: number;
+  precipitationType?: string;
+  skyCondition?: string;
+  pm10Value?: number;
 }
 
 // 알림 데이터 타입 정의
@@ -34,6 +33,7 @@ export class AlertsSchedulerService {
     private readonly weatherAirService: WeatherAirService,
   ) {}
 
+  // 10분마다 알림 체크 (배포 시 변경 가능)
   @Cron(CronExpression.EVERY_10_MINUTES, { name: 'checkWeatherAlerts' })
   async handleCron() {
     this.logger.log('날씨 알림 체크 시작');
@@ -53,72 +53,86 @@ export class AlertsSchedulerService {
           location.nx === null ||
           location.ny === null
         ) {
-          // 상세 로그 추가: 사용자 ID와 location 객체 내용을 포함하여 출력
-          const userId = setting.user?.id; // 사용자 ID 가져오기
+          const userId = setting.user?.id;
           this.logger.warn(
-            `알림 설정 ${setting.id} 건너뜀. 사용자 ID: ${userId}. 이유: 위치 정보 누락. 위치 정보: ${JSON.stringify(location)}`,
+            `알림 설정 ${setting.id} 건너뜀. 사용자 ID: ${userId}. 이유: 위치 정보 누락. 위치 정보: ${JSON.stringify(
+              location,
+            )}`,
           );
           continue;
         }
 
-        // 2. 각 서비스에서 데이터 조회
-        let currentForecast: any = null;
-        let airQuality: any = null;
+        let actualValue: number | null | undefined = null;
 
+        // 2. 설정 타입에 따라 필요한 데이터 조회
         try {
-          const forecasts =
-            await this.todayForecastService.getForecastByRegionName(
-              location.sido,
-              location.gugun,
+          if (['TEMPERATURE', 'HUMIDITY', 'WIND'].includes(setting.type)) {
+            const forecasts =
+              await this.todayForecastService.getForecastByRegionName(
+                location.sido,
+                location.gugun,
+              );
+            const currentForecast = forecasts?.[0];
+
+            if (currentForecast) {
+              switch (setting.type) {
+                case 'TEMPERATURE':
+                  actualValue = currentForecast.temperature;
+                  break;
+                case 'HUMIDITY':
+                  actualValue = currentForecast.humidity;
+                  break;
+                case 'WIND':
+                  actualValue = currentForecast.windSpeed;
+                  break;
+              }
+            } else {
+              this.logger.warn(`예보 데이터 없음. 설정 ID: ${setting.id}.`);
+            }
+          } else if (setting.type === 'AIRQUALITY') {
+            const airQualityDto =
+              await this.weatherAirService.getAirQualityById(location.id);
+            if (
+              airQualityDto &&
+              airQualityDto.pm10 !== undefined &&
+              airQualityDto.pm10 !== null
+            ) {
+              actualValue = parseFloat(airQualityDto.pm10);
+            } else {
+              this.logger.warn(
+                `미세먼지 데이터 없음 또는 pm10 값 누락. 설정 ID: ${setting.id}.`,
+              );
+            }
+          } else {
+            this.logger.warn(
+              `알 수 없는 알림 타입: ${setting.type}. 설정 ID: ${setting.id}`,
             );
-          currentForecast = forecasts?.[0];
+            continue;
+          }
         } catch (error) {
           this.logger.error(
-            `예보 데이터 조회 오류. 설정 ID: ${setting.id}. 시도: ${location.sido}, 군구: ${location.gugun}. 오류 메시지: ${error.message}`,
+            `${setting.type} 데이터 조회 오류. 설정 ID: ${setting.id}. 오류: ${error.stack}`,
           );
+          continue;
         }
 
-        try {
-          // WeatherAirService returns a DTO, access its properties
-          const airQualityDto = await this.weatherAirService.getAirQualityById(
-            location.id,
-          );
-          airQuality = airQualityDto; // Assuming DTO has pm10Value etc.
-        } catch (error) {
-          this.logger.error(
-            `미세먼지 데이터 조회 오류. 설정 ID: ${setting.id}. 위치 ID: ${location.id}. 오류 메시지: ${error.message}`,
-          );
-        }
-
-        // 3. 데이터 취합 (WeatherData 형태로)
-        const weatherData: WeatherData = {
-          temperature: currentForecast?.temperature,
-          humidity: currentForecast?.humidity,
-          windSpeed: currentForecast?.windSpeed,
-          precipitationType: currentForecast?.precipitationType,
-          skyCondition: currentForecast?.skyCondition,
-          pm10Value: airQuality?.pm10 ? parseFloat(airQuality.pm10) : undefined,
-        };
-
-        // 4. 알림 조건 확인
-        const actualValue = this.getActualValue(setting.type, weatherData);
+        // 3. 알림 조건 확인
         const shouldTrigger = this.shouldTriggerAlert(setting, actualValue);
 
-        if (
-          shouldTrigger &&
-          actualValue !== null &&
-          actualValue !== undefined
-        ) {
+        // 4. 알림 발생 로직 (shouldTrigger가 true이고 actualValue가 number일 때만 실행)
+        if (shouldTrigger && typeof actualValue === 'number') {
           this.logger.log(`알림 발생: ${setting.id} 설정 (${setting.type})`);
 
-          // 알림 메시지 생성 개선
+          // 알림 메시지 생성
           const thresholdText =
             setting.type === 'AIRQUALITY'
               ? this.getPmGradeFromValue(setting.threshold)
               : `${setting.threshold}${setting.unit ?? ''}`;
           const actualValueText =
             setting.type === 'AIRQUALITY'
-              ? `${actualValue}${setting.unit ?? ''} (${this.getPmGradeFromValue(actualValue)})`
+              ? `${actualValue}${setting.unit ?? ''} (${this.getPmGradeFromValue(
+                  actualValue,
+                )})`
               : `${actualValue}${setting.unit ?? ''}`;
 
           const alertData: AlertData = {
@@ -126,6 +140,7 @@ export class AlertsSchedulerService {
             type: setting.type,
           };
 
+          // 알림 로그 생성 및 발송
           await this.alertLogService.createLog(
             setting.user.id,
             setting.id,
@@ -135,10 +150,14 @@ export class AlertsSchedulerService {
             alertData.type,
           );
           this.alertLogService.sendAlertToUser(setting.user.id, alertData);
+        } else if (shouldTrigger && typeof actualValue !== 'number') {
+          this.logger.error(
+            `알림 트리거 로직 오류. 설정 ID: ${setting.id}, 값: ${actualValue}`,
+          );
         }
       } catch (error) {
         this.logger.error(
-          `알림 처리 오류. 설정 ID: ${setting.id}. 오류 메시지: ${error.stack}`,
+          `알림 처리 중 예외 발생. 설정 ID: ${setting.id}. 오류: ${error.stack}`,
         );
       }
     }
@@ -150,52 +169,20 @@ export class AlertsSchedulerService {
     actualValue: number | undefined | null,
   ): boolean {
     this.logger.debug(
-      `임계치 확인 중: 설정 ID: ${setting.id}, 임계치: ${setting.threshold}, 실제 값: ${actualValue}`,
+      `임계치 확인 중: 설정 ID: ${setting.id}, 타입: ${setting.type}, 임계치: ${setting.threshold}, 실제 값: ${actualValue}`,
     );
-    const { type, threshold } = setting;
+    const { threshold } = setting;
 
     if (actualValue === undefined || actualValue === null) {
-      this.logger.warn(
-        `알림 조건 확인 오류. 설정 ID: ${setting.id}. 오류 메시지: 실제 값 누락. 타입: ${type}`,
-      );
       return false;
     }
-
     try {
-      switch (type) {
-        case 'TEMPERATURE':
-        case 'HUMIDITY':
-        case 'WIND':
-          return actualValue >= threshold;
-        case 'AIRQUALITY':
-          return actualValue >= threshold;
-        default:
-          this.logger.warn(`Unsupported alert type: ${type}`);
-          return false;
-      }
+      return actualValue >= threshold;
     } catch (e) {
       this.logger.error(
-        `알림 조건 확인 오류. 설정 ID: ${setting.id}. 오류 메시지: ${e.message}`,
+        `알림 조건 비교 오류. 설정 ID: ${setting.id}. 오류: ${e.message}`,
       );
       return false;
-    }
-  }
-
-  private getActualValue(
-    type: string,
-    data: WeatherData,
-  ): number | undefined | null {
-    switch (type) {
-      case 'TEMPERATURE':
-        return data.temperature;
-      case 'HUMIDITY':
-        return data.humidity;
-      case 'WIND':
-        return data.windSpeed;
-      case 'AIRQUALITY':
-        return data.pm10Value;
-      default:
-        return undefined;
     }
   }
 

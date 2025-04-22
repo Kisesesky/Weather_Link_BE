@@ -1,4 +1,12 @@
-import { Controller, Sse, UseGuards, Get, Param, Logger, Query } from '@nestjs/common';
+import {
+  Controller,
+  Sse,
+  UseGuards,
+  Get,
+  Param,
+  Logger,
+  Query,
+} from '@nestjs/common';
 import { map } from 'rxjs';
 import { AlertLogService } from '../services/alert-log.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -18,7 +26,7 @@ export class AlertLogController {
   @UseGuards(JwtAuthGuard)
   async getLogs(@RequestUser() user: User) {
     this.logger.log(
-      `[AlertLogController] Received request for getLogs by user: ${user.id}`,
+      `[AlertLogController] 알람 로그 조회 요청 받음. 사용자 ID: ${user.id}`,
     );
     return await this.alertsService.getLogs(user.id);
   }
