@@ -38,16 +38,6 @@ export class UpdateAlertSettingDto {
   threshold?: number | AirQualityGrade; // Allow number or specific string grades
 
   @ApiProperty({
-    description: '업데이트할 알림 조건',
-    example: 'above',
-    required: false,
-    enum: alertConditions,
-  })
-  @IsOptional()
-  @IsEnum(alertConditions)
-  condition?: AlertCondition;
-
-  @ApiProperty({
     description: '업데이트할 알림 활성화 여부',
     example: true,
     required: false,

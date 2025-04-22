@@ -55,7 +55,6 @@ export class AlertSettingService {
     const newSetting = new AlertSetting();
     newSetting.user = user;
     newSetting.type = createAlertSettingdto.type;
-    newSetting.condition = createAlertSettingdto.condition;
     newSetting.active = createAlertSettingdto.active;
 
     // type에 따라 unit 자동 설정
@@ -143,8 +142,6 @@ export class AlertSettingService {
       }
     }
 
-    if (updateAlertSettingDto.condition)
-      setting.condition = updateAlertSettingDto.condition;
     if (updateAlertSettingDto.active !== undefined)
       setting.active = updateAlertSettingDto.active;
 

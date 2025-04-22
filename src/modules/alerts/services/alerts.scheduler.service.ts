@@ -97,16 +97,12 @@ export class AlertsSchedulerService {
           windSpeed: currentForecast?.windSpeed,
           precipitationType: currentForecast?.precipitationType,
           skyCondition: currentForecast?.skyCondition,
-          pm10Value: airQuality?.pm10Value, // AirQualityResponseDto
+          pm10Value: airQuality?.pm10 ? parseFloat(airQuality.pm10) : undefined,
         };
 
         // 4. 알림 조건 확인
         const actualValue = this.getActualValue(setting.type, weatherData);
-        const shouldTrigger = this.checkAlertCondition(
-          setting,
-          weatherData,
-          actualValue,
-        );
+        const shouldTrigger = this.shouldTriggerAlert(setting, actualValue);
 
         if (
           shouldTrigger &&
@@ -116,9 +112,6 @@ export class AlertsSchedulerService {
           this.logger.log(`알림 발생: ${setting.id} 설정 (${setting.type})`);
 
           // 알림 메시지 생성 개선
-          const conditionText = { above: '이상', below: '이하', equal: '같음' }[
-            setting.condition
-          ];
           const thresholdText =
             setting.type === 'AIRQUALITY'
               ? this.getPmGradeFromValue(setting.threshold)
@@ -129,7 +122,7 @@ export class AlertsSchedulerService {
               : `${actualValue}${setting.unit ?? ''}`;
 
           const alertData: AlertData = {
-            message: `[${setting.type}] ${conditionText} ${thresholdText} 조건 충족 (현재: ${actualValueText})`,
+            message: `[${setting.type}] ${thresholdText} 기준 도달/초과 (현재: ${actualValueText})`,
             type: setting.type,
           };
 
@@ -145,29 +138,25 @@ export class AlertsSchedulerService {
         }
       } catch (error) {
         this.logger.error(
-          `Error processing setting ${setting.id}: ${error.stack}`,
+          `알림 처리 오류. 설정 ID: ${setting.id}. 오류 메시지: ${error.stack}`,
         );
       }
     }
     this.logger.log('날씨 알림 체크 완료');
   }
 
-  private checkAlertCondition(
+  private shouldTriggerAlert(
     setting: AlertSetting,
-    weatherData: WeatherData,
     actualValue: number | undefined | null,
   ): boolean {
     this.logger.debug(
-      `Checking condition for setting ${setting.id}: ${JSON.stringify(weatherData)}`,
+      `임계치 확인 중: 설정 ID: ${setting.id}, 임계치: ${setting.threshold}, 실제 값: ${actualValue}`,
     );
-    const { type, condition, threshold } = setting;
+    const { type, threshold } = setting;
 
     if (actualValue === undefined || actualValue === null) {
       this.logger.warn(
-        'No actual value available for type ' +
-          type +
-          ' in setting ' +
-          setting.id,
+        `알림 조건 확인 오류. 설정 ID: ${setting.id}. 오류 메시지: 실제 값 누락. 타입: ${type}`,
       );
       return false;
     }
@@ -175,36 +164,18 @@ export class AlertsSchedulerService {
     try {
       switch (type) {
         case 'TEMPERATURE':
-          return condition === 'above'
-            ? actualValue > threshold
-            : condition === 'below'
-              ? actualValue < threshold
-              : actualValue === threshold;
         case 'HUMIDITY':
-          return condition === 'above'
-            ? actualValue > threshold
-            : condition === 'below'
-              ? actualValue < threshold
-              : actualValue === threshold;
         case 'WIND':
-          return condition === 'above'
-            ? actualValue > threshold
-            : condition === 'below'
-              ? actualValue < threshold
-              : actualValue === threshold;
+          return actualValue >= threshold;
         case 'AIRQUALITY':
-          return condition === 'above'
-            ? actualValue >= threshold
-            : condition === 'below'
-              ? actualValue < threshold
-              : false;
+          return actualValue >= threshold;
         default:
           this.logger.warn(`Unsupported alert type: ${type}`);
           return false;
       }
     } catch (e) {
       this.logger.error(
-        `Error in checkAlertCondition for setting ${setting.id}: ${e.message}`,
+        `알림 조건 확인 오류. 설정 ID: ${setting.id}. 오류 메시지: ${e.message}`,
       );
       return false;
     }
