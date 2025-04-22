@@ -7,6 +7,7 @@ import {
   Matches,
 } from 'class-validator';
 import { Theme } from '../entities/user.entity';
+import { LocationsEntity } from '../../locations/entities/location.entity';
 
 export class UpdateUserDto {
   @ApiProperty({
@@ -29,17 +30,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
-  profileImage?: Express.Multer.File;
-
-  @ApiProperty({
-    type: String,
-    description: '위치 정보',
-    example: '9bb48bb2-0d6c-43a1-b0b2-406797ca2a93',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  location?: string;
+  profileImage?: Express.Multer.File | string;
 
   @ApiProperty({
     enum: Theme,

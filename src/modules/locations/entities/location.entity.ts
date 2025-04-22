@@ -1,5 +1,7 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from 'src/modules/users/entities/user.entity';
+import { ChatRoom } from 'src/modules/chat/entities/chatRoom.entity';
+import { RegionEntity } from './region.entity';
 
 @Entity()
 export class LocationsEntity {
@@ -16,10 +18,10 @@ export class LocationsEntity {
   stationCode: string;
 
   @Column()
-  forecastCode: string
+  forecastCode: string;
 
   @Column()
-  forecastStationCode: string
+  forecastStationCode: string;
 
   @Column()
   sido: string;
@@ -44,4 +46,10 @@ export class LocationsEntity {
 
   @OneToMany(() => User, (user) => user.location)
   users: User[];
+
+  @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.location)
+  chatRooms: ChatRoom[];
+
+  @ManyToOne(() => RegionEntity, region => region.locations)
+  region: RegionEntity;
 }

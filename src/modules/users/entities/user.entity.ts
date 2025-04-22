@@ -1,8 +1,12 @@
-import { Entity, Column, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, Column, OneToMany, ManyToOne, ManyToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { LoginLog } from 'src/modules/login-logs/entities/login-log.entity';
 import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 import { Friend } from 'src/modules/friends/entities/friend.entity';
+import { ChatRoom } from 'src/modules/chat/entities/chatRoom.entity';
+import { Message } from 'src/modules/chat/entities/message.entity';
+import { AlertSetting } from 'src/modules/alerts/entities/alert_setting.entity';
+import { AlertLog } from 'src/modules/alerts/entities/alert-log.entity';
 
 export enum RegisterType {
   EMAIL = 'EMAIL',
@@ -65,4 +69,24 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Friend, (friend) => friend.receiver)
   receivedRequests: Friend[];
+
+  @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants, {
+    onDelete: 'CASCADE',
+  })
+  chatRooms: ChatRoom[];
+
+  @OneToMany(() => Message, (message) => message.sender)
+  messages: Message[];
+
+  @Column()
+  termsAgreed: boolean;
+
+  @Column()
+  locationAgreed: boolean;
+
+  @OneToMany(() => AlertSetting, (alertSetting) => alertSetting.user)
+  alertSettings: AlertSetting[];
+
+  @OneToMany(() => AlertLog, (alertLog) => alertLog.user)
+  alertLogs: AlertLog[];
 }

@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { DbConfigService } from 'src/config/db/config.service';
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 // entity, migration, subscriber 해당 위치에서 호출
 const entity = join(__dirname, '/**/*.entity{.ts,.js}');
@@ -16,7 +18,7 @@ const dbConfigService = new DbConfigService(new ConfigService());
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: dbConfigService.dbHost,
-  port: dbConfigService.dbPort,
+  port: dbConfigService.dbPort || 5432,
   username: dbConfigService.dbUser,
   password: dbConfigService.dbPassword,
   database: dbConfigService.dbName,

@@ -104,11 +104,11 @@ export class EmailService {
 
   async verifyCode(email: string, code: string): Promise<boolean> {
     const storedCode = await this.cacheManager.get(this.getVerificationKey(email));
-    if (
-      !storedCode || storedCode !== code
-    ) {
+    if (!storedCode || storedCode.toString().trim() !== code.trim()) {
+      this.logger.warn(`이메일: ${email}, 인증 코드가 일치하지 않음 (입력 코드: ${code})`);
       return false;
     }
+  
 
     await this.cacheManager.del(this.getVerificationKey(email));
     await this.cacheManager.set(this.getVerifiedKey(email), 'true', 24 * 60 * 60 * 1000); //24시간

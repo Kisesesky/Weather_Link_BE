@@ -17,7 +17,8 @@ import { NaverStrategy } from './strategies/naver.strategy';
 import { EmailService } from './email/email.service';
 import { S3Module } from '../s3/s3.module';
 import { LoginLogsModule } from '../login-logs/login-logs.module';
-import { RedisCacheModule } from 'src/config/cache/cache.module';
+import { RedisCacheModule } from 'src/common/cache/redis-cache.module';
+import { LocationsModule } from '../locations/locations.module';
 
 @Module({
   imports: [
@@ -32,11 +33,12 @@ import { RedisCacheModule } from 'src/config/cache/cache.module';
       imports: [AppConfigModule],
       useFactory: (appConfigService: AppConfigService) => ({
         secret: appConfigService.jwtSecret,
-        signOptions: { expiresIn: '3600s' },
+        signOptions: { expiresIn: '1h' },
       }),
       inject: [AppConfigService],
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    LocationsModule,
   ],
   controllers: [AuthController, AuthServiceController],
   providers: [
