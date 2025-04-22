@@ -8,7 +8,7 @@ import { AppConfigModule } from 'src/config/app/config.module';
 import { SocialConfigModule } from 'src/config/social/config.module';
 import { AppConfigService } from 'src/config/app/config.service';
 import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './strategies/jwt.starategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { GoogleStrategy } from './strategies/google.strategy';

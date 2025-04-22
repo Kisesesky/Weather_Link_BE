@@ -35,7 +35,11 @@ import { RegionUtils } from './utils/region.util';
     LocationsModule,
     HttpModule,
   ],
-  controllers: [WeatherController, MidTempController, WeatherCollectiorController],
+  controllers: [
+    WeatherController,
+    MidTempController,
+    WeatherCollectiorController,
+  ],
   providers: [
     WeatherService,
     WeatherAirService,
@@ -47,6 +51,6 @@ import { RegionUtils } from './utils/region.util';
     WeatherCollectiorController,
     RegionUtils,
   ],
-  exports: [WeatherAirService],
+  exports: [WeatherAirService, TodayForecastService],
 })
 export class WeatherModule {}

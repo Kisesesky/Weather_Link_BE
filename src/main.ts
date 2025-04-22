@@ -2,12 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import * as basicAuth from 'express-basic-auth'
+import * as basicAuth from 'express-basic-auth';
 import { DbConfigService } from 'src/config/db/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(DbConfigService)
+  const configService = app.get(DbConfigService);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -23,9 +23,9 @@ async function bootstrap() {
     ],
     credentials: true,
   });
-  
+
   //Swagger 암호화 .env development시 개방형열람, 배포이후 production으로 설정시 암호화열람
-  if(configService.nodeEnv !== 'development'){
+  if (configService.nodeEnv !== 'development') {
     app.use(
       ['/docs'],
       basicAuth({

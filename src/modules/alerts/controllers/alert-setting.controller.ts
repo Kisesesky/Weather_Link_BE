@@ -8,11 +8,11 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AlertsService } from './alert.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { User } from '../users/entities/user.entity';
-import { CreateAlertSettingDto } from './dto/create-alert-setting.dto';
-import { UpdateAlertSettingDto } from './dto/update-alert-setting.dto';
+import { AlertSettingService } from '../services/alert-setting.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { User } from '../../users/entities/user.entity';
+import { CreateAlertSettingDto } from '../dto/create-alert-setting.dto';
+import { UpdateAlertSettingDto } from '../dto/update-alert-setting.dto';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -22,8 +22,8 @@ import { ResponseDto } from 'src/common/dto/response.dto';
 @ApiBearerAuth()
 @Controller('alert-settings')
 @UseGuards(JwtAuthGuard)
-export class AlertController {
-  constructor(private readonly alertsService: AlertsService) {}
+export class AlertSettingController {
+  constructor(private readonly alertsService: AlertSettingService) {}
 
   @Post()
   @ApiOperation({
