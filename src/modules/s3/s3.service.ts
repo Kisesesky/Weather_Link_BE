@@ -19,12 +19,11 @@ export class S3Service {
   async uploadImage(file: Express.Multer.File, dirPath: string) {
     const fileName = `${dirPath}/${Date.now()}`;
 
-    const uploadParams: PutObjectCommandInput  = {
+    const uploadParams = {
       Bucket: this.awsConfigService.awsBucketName,
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: "public-read",
     };
 
     await this.s3.send(new PutObjectCommand(uploadParams));
