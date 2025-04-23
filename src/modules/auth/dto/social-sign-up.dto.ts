@@ -41,12 +41,4 @@ export class SocialSignupDto {
   })
   @IsString()
   gugun: string;
-
-  @ApiProperty({
-    type: String,
-    description: '동',
-    example: '역삼1동',
-  })
-  @IsString()
-  dong: string;
 }

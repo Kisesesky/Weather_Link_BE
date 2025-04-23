@@ -46,7 +46,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       locationAgreed: false,
       sido: '서울특별시',
       gugun: '강남구',
-      dong: '역삼1동',
     });
 
     done(null, newUser);

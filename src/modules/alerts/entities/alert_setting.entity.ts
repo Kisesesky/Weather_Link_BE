@@ -25,9 +25,6 @@ export class AlertSetting {
   @Column()
   unit: string; // 단위
 
-  @Column({ type: 'varchar' })
-  condition: 'above' | 'below' | 'equal';
-
   @Column()
   active: boolean;
 

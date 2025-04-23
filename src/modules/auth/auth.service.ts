@@ -271,20 +271,15 @@ export class AuthService {
       throw new BadRequestException('약관 동의가 필요합니다.');
     }
 
-    // 위치 정보 찾기 (테스트용 임시 하드코딩)
-    const sido = '서울특별시';
-    const gugun = '강남구';
-    const dong = '역삼1동';
+    // 위치 정보 찾기 (findBySidoGugun 사용)
+    console.log('위치 정보 조회:', {
+      sido: socialSignupDto.sido,
+      gugun: socialSignupDto.gugun,
+    });
 
-    console.log('위치 정보 조회:', { sido, gugun, dong });
-
-    const location = await this.locationsService.findBySidoGugunDong(
-      // completeSocialSignupDto.sido,
-      // completeSocialSignupDto.gugun,
-      // completeSocialSignupDto.dong,
-      sido,
-      gugun,
-      dong,
+    const location = await this.locationsService.findBySidoGugun(
+      socialSignupDto.sido,
+      socialSignupDto.gugun,
     );
 
     if (!location) {

@@ -39,7 +39,6 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
       locationAgreed: false,
       sido: '서울특별시',
       gugun: '강남구',
-      dong: '역삼1동',
     });
 
     return newUser;

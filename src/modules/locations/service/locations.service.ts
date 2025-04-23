@@ -10,7 +10,11 @@ import * as fs from 'fs';
 import * as csv from 'csv-parser';
 import { LocationsEntity } from '../entities/location.entity';
 import { RegIdMapping, RegionInfo } from '../interface/region.interface';
-import { REGION_MAPPINGS, REGION_MAPS, SIDO_NAME_MAP } from '../utils/region-map';
+import {
+  REGION_MAPPINGS,
+  REGION_MAPS,
+  SIDO_NAME_MAP,
+} from '../utils/region-map';
 
 @Injectable()
 export class LocationsService {
@@ -102,7 +106,7 @@ export class LocationsService {
       .distinctOn(['location.sido'])
       .orderBy('location.sido', 'ASC')
       .getRawMany();
-  
+
     return rows.map((r) => ({
       sido: r.location_sido,
       id: r.location_id,
@@ -118,7 +122,7 @@ export class LocationsService {
       .andWhere('location.gugun IS NOT NULL')
       .orderBy('location.gugun', 'ASC')
       .getRawMany();
-  
+
     return rows.map((r) => ({
       gugun: r.location_gugun,
       id: r.location_id,
@@ -130,11 +134,14 @@ export class LocationsService {
       .createQueryBuilder('location')
       .select(['location.dong', 'location.id'])
       .distinctOn(['location.dong'])
-      .where('location.sido = :sido AND location.gugun = :gugun', { sido, gugun })
+      .where('location.sido = :sido AND location.gugun = :gugun', {
+        sido,
+        gugun,
+      })
       .andWhere('location.dong IS NOT NULL')
       .orderBy('location.dong', 'ASC')
       .getRawMany();
-  
+
     return rows.map((r) => ({
       dong: r.location_dong,
       id: r.location_id,
@@ -249,6 +256,34 @@ export class LocationsService {
     return location;
   }
 
+  // sido와 gugun만으로 첫 번째 매칭되는 위치 정보 조회하는 메소드 추가
+  async findBySidoGugun(
+    sido: string,
+    gugun: string,
+  ): Promise<LocationsEntity | null> {
+    this.logger.debug(`시/도 및 구/군으로 위치 정보 조회: ${sido} ${gugun}`);
+
+    const location = await this.locationsRepository.findOne({
+      where: {
+        sido,
+        gugun,
+      },
+      // 필요하다면 order 옵션 추가하여 일관성 확보 (예: order: { dong: 'ASC' })
+    });
+
+    if (!location) {
+      this.logger.warn(
+        `시/도 및 구/군에 해당하는 위치 정보를 찾을 수 없습니다: ${sido} ${gugun}`,
+      );
+    } else {
+      this.logger.debug(
+        `시/도 및 구/군 대표 위치 정보를 찾았습니다: ${location.id} (${location.sido} ${location.gugun})`,
+      );
+    }
+
+    return location;
+  }
+
   // 시도 목록 조회
   async getSidos(): Promise<string[]> {
     const query = this.locationsRepository
@@ -303,7 +338,7 @@ export class LocationsService {
     }
     return result;
   }
-  
+
   // 시도 이름 정규화 (DB의 공식 이름 -> 짧은 이름) '시', '도' 등의 접미사 제거
   private normalizeSido(sido: string): string {
     for (const [shortName, fullName] of Object.entries(SIDO_NAME_MAP)) {

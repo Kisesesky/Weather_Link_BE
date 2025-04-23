@@ -67,11 +67,10 @@ export class UsersService {
         ? (restDto.locationAgreed as string).toLowerCase() === 'true'
         : !!restDto.locationAgreed;
 
-    // 위치 정보 찾기
-    const location = await this.locationsService.findBySidoGugunDong(
+    // 위치 정보 찾기 (findBySidoGugun 사용)
+    const location = await this.locationsService.findBySidoGugun(
       restDto.sido,
       restDto.gugun,
-      restDto.dong,
     );
 
     if (!location) {
@@ -120,7 +119,6 @@ export class UsersService {
       location: {
         sido: user.location.sido,
         gugun: user.location.gugun,
-        dong: user.location.dong,
       },
     };
   }
@@ -130,7 +128,7 @@ export class UsersService {
     profileImage?: Express.Multer.File,
   ) {
     const DEFAULT_PROFILE_IMAGE =
-      'https://i.postimg.cc/KzyfwJ6J/profile-default.png';
+      'https://i.postimg.cc/ZRBFR9bq/profile-Image-default.png';
 
     // 일반 회원가입
     if (signUpDto.registerType === RegisterType.EMAIL) {
@@ -218,7 +216,6 @@ export class UsersService {
         ? {
             sido: user.location.sido,
             gugun: user.location.gugun,
-            dong: user.location.dong,
           }
         : null,
     };

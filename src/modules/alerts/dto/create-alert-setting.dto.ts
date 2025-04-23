@@ -26,15 +26,6 @@ export class CreateAlertSettingDto {
   threshold: number | string;
 
   @ApiProperty({
-    description: '알림 조건 (이상, 이하, 같음)',
-    example: 'above',
-  })
-  @IsString()
-  @IsEnum(['above', 'below', 'equal'])
-  @IsNotEmpty()
-  condition: 'above' | 'below' | 'equal';
-
-  @ApiProperty({
     description: '알림 활성화 여부',
     example: true,
   })

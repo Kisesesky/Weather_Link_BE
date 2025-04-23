@@ -2,16 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { RegisterType, Theme } from 'src/modules/users/entities/user.entity';
 
-// 중첩된 location 구조를 위한 DTO
 class LocationResponseDto {
   @ApiProperty({ description: '시/도', example: '서울특별시' })
   sido: string;
 
   @ApiProperty({ description: '구/군', example: '강남구' })
   gugun: string;
-
-  @ApiProperty({ description: '동', example: '역삼1동' })
-  dong: string;
 }
 
 export class ResponseSignUpDto {

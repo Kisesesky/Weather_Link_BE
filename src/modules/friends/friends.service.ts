@@ -12,6 +12,7 @@ import { paginate } from 'src/utils/pagination.util';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { User } from '../users/entities/user.entity';
 import { ILike } from 'typeorm';
+import { UserBasicInfoDto } from 'src/common/dto/user-basic-info.dto';
 
 @Injectable()
 export class FriendsService {
@@ -24,13 +25,31 @@ export class FriendsService {
   // 유저 검색
   async searchUsers(name: string, paginationDto: PaginationDto) {
     const query = this.usersService.findUserByName(name);
-    return paginate(User, paginationDto, query);
+
+    // 사용자 위치 정보를 함께 가져오도록 join 추가
+    query.leftJoinAndSelect('user.location', 'location');
+
+    // 페이지네이션 처리
+    const paginatedResult = await paginate(User, paginationDto, query);
+
+    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
+    const mappedData = paginatedResult.data.map((user) =>
+      UserBasicInfoDto.fromUser(user),
+    );
+
+    return {
+      data: mappedData,
+      total: paginatedResult.total,
+      take: paginationDto.take,
+      skip: paginationDto.skip,
+    };
   }
 
   async sendFriendRequest(senderId: string, receiverId: string) {
     if (senderId === receiverId)
       throw new BadRequestException('자기 자신에게 요청할 수 없습니다.');
 
+    // sender와 receiver 정보를 location 포함하여 조회 (findUserById 사용)
     const sender = await this.usersService.findUserById(senderId);
     const receiver = await this.usersService.findUserById(receiverId);
 
@@ -64,7 +83,20 @@ export class FriendsService {
       receiver,
       status: 'pending',
     });
-    return this.friendRepository.save(request);
+    // 저장된 Friend 엔티티를 받음
+    const savedRequest = await this.friendRepository.save(request);
+
+    // UserBasicInfoDto를 사용하여 응답 데이터 생성
+    const responseData = {
+      id: savedRequest.id,
+      status: savedRequest.status,
+      createdAt: savedRequest.createdAt,
+      sender: UserBasicInfoDto.fromUser(sender),
+      receiver: UserBasicInfoDto.fromUser(receiver),
+    };
+
+    // 구성된 응답 데이터 객체 반환
+    return responseData;
   }
 
   // 친구 요청 수락 또는 거절
@@ -75,7 +107,7 @@ export class FriendsService {
   ) {
     const request = await this.friendRepository.findOne({
       where: { id },
-      relations: ['sender', 'receiver'],
+      relations: ['sender', 'sender.location', 'receiver', 'receiver.location'],
     });
 
     if (!request) throw new NotFoundException('친구 요청을 찾을 수 없습니다.');
@@ -85,23 +117,58 @@ export class FriendsService {
       throw new BadRequestException('이미 처리된 요청입니다.');
 
     request.status = accept ? 'accepted' : 'rejected';
-    return this.friendRepository.save(request);
+    const savedRequest = await this.friendRepository.save(request);
+
+    // UserBasicInfoDto를 사용하여 응답 데이터 생성
+    const responseData = {
+      id: savedRequest.id,
+      status: savedRequest.status,
+      createdAt: savedRequest.createdAt,
+      sender: UserBasicInfoDto.fromUser(savedRequest.sender),
+      receiver: UserBasicInfoDto.fromUser(savedRequest.receiver),
+    };
+
+    return responseData;
   }
 
   // 보낸 친구 요청 목록
   async getSentRequests(userId: string) {
-    return this.friendRepository.find({
+    const requests = await this.friendRepository.find({
       where: { sender: { id: userId }, status: 'pending' },
-      relations: ['receiver'],
+      // receiver와 receiver의 location 정보 로드
+      relations: ['receiver', 'receiver.location'],
     });
+
+    // 필요한 필드만 선택하여 데이터 매핑
+    const mappedRequests = requests.map((req) => ({
+      id: req.id,
+      status: req.status,
+      createdAt: req.createdAt,
+      // UserBasicInfoDto를 사용하여 receiver 정보 매핑
+      receiver: req.receiver ? UserBasicInfoDto.fromUser(req.receiver) : null,
+    }));
+
+    // 매핑된 요청 목록 반환
+    return mappedRequests;
   }
 
   // 받은 친구 요청 목록
   async getReceivedRequests(userId: string) {
-    return this.friendRepository.find({
+    const requests = await this.friendRepository.find({
       where: { receiver: { id: userId }, status: 'pending' },
-      relations: ['sender'],
+      // sender와 sender의 location 정보 로드
+      relations: ['sender', 'sender.location'],
     });
+
+    // UserBasicInfoDto를 사용하여 데이터 매핑
+    const mappedRequests = requests.map((req) => ({
+      id: req.id,
+      status: req.status,
+      createdAt: req.createdAt,
+      // UserBasicInfoDto를 사용하여 sender 정보 매핑
+      sender: req.sender ? UserBasicInfoDto.fromUser(req.sender) : null,
+    }));
+    return mappedRequests;
   }
 
   // 친구로 등록된 전체 목록 조회
@@ -119,15 +186,25 @@ export class FriendsService {
 
     const [friends, total] = await this.friendRepository.findAndCount({
       where: whereCondition,
-      relations: ['sender', 'receiver'],
+      // sender와 receiver의 location 정보도 함께 로드
+      relations: ['sender', 'receiver', 'sender.location', 'receiver.location'],
       skip: paginationDto.skip,
       take: paginationDto.take,
     });
 
+    // 조회된 Friend 관계 목록에서 친구 User 객체만 추출
+    const friendUsers = friends.map((friend) =>
+      friend.sender.id === userId ? friend.receiver : friend.sender,
+    );
+
+    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
+    const mappedFriendsData = friendUsers.map((user) =>
+      UserBasicInfoDto.fromUser(user),
+    );
+
+    // 최종 결과 객체 반환
     return {
-      data: friends.map((friend) =>
-        friend.sender.id === userId ? friend.receiver : friend.sender,
-      ),
+      data: mappedFriendsData,
       total,
       take: paginationDto.take,
       skip: paginationDto.skip,
@@ -155,15 +232,21 @@ export class FriendsService {
 
     const [friends, total] = await this.friendRepository.findAndCount({
       where: whereCondition,
-      relations: ['sender', 'receiver'],
+      // sender와 receiver의 location 정보 로드
+      relations: ['sender', 'receiver', 'sender.location', 'receiver.location'],
       skip: paginationDto.skip,
       take: paginationDto.take,
     });
 
+    // 친구 User 객체 추출 및 UserBasicInfoDto로 매핑 (람다 함수 사용)
+    const mappedData = friends.map((friend) =>
+      friend.sender.id === userId
+        ? UserBasicInfoDto.fromUser(friend.receiver)
+        : UserBasicInfoDto.fromUser(friend.sender),
+    );
+
     return {
-      data: friends.map((friend) =>
-        friend.sender.id === userId ? friend.receiver : friend.sender,
-      ),
+      data: mappedData,
       total,
       take: paginationDto.take,
       skip: paginationDto.skip,
@@ -173,13 +256,21 @@ export class FriendsService {
   // 친구 목록에서 특정 친구 삭제
   async removeFriend(userId: string, friendId: string) {
     const friend = await this.friendRepository.findOne({
-      where: {
-        sender: { id: userId },
-        receiver: { id: friendId },
-      },
+      where: [
+        {
+          sender: { id: userId },
+          receiver: { id: friendId },
+          status: 'accepted',
+        },
+        {
+          sender: { id: friendId },
+          receiver: { id: userId },
+          status: 'accepted',
+        },
+      ],
     });
 
-    if (!friend) throw new NotFoundException('친구를 찾을 수 없습니다.');
+    if (!friend) throw new NotFoundException('친구 관계를 찾을 수 없습니다.');
 
     await this.friendRepository.remove(friend);
   }
