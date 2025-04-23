@@ -30,7 +30,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
-  profileImage?: Express.Multer.File | string;
+  profileImage?: Express.Multer.File;
 
   @ApiProperty({
     enum: Theme,

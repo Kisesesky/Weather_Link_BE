@@ -138,7 +138,7 @@ export class UsersService {
     ) {
       try {
         const url = await this.s3Service.uploadImage(profileImage, 'profiles');
-        console.log('S3 업로드 성공 URL:', url); // 로그 추가
+        console.log('S3 업로드 성공 URL:', url);
         return url;
       } catch (error) {
         console.error('S3 업로드 실패:', error);
@@ -274,8 +274,9 @@ export class UsersService {
       }
     }
 
-    // 사용자 정보 업데이트
-    Object.assign(user, updateUserDto);
+    // 사용자 정보 업데이트 (DTO 필드 병합 전 profileImage 제거)
+    const { profileImage: _, ...dtoToAssign } = updateUserDto;
+    Object.assign(user, dtoToAssign); // profileImage 제외된 DTO 사용
 
     const updatedUser = await this.usersRepository.save(user);
     const { password, ...rest } = updatedUser;
