@@ -202,6 +202,8 @@ export class MidTempService {
         // 그 외에는 그대로 반환 (경기도, 강원도 등)
         return gugun;
     }
+    
+    
 
     public async getMidTermTempWithForecast(sido: string, gugun: string) {
         const regId = this.getRegId(sido, gugun);
@@ -217,9 +219,14 @@ export class MidTempService {
             tempData = await this.getForecastsByRegion(regId);
         }
 
+        // 예보 데이터 조회
         const forecastData = await this.midForecastService.transformMidTermForecast(sido, gugun);
+
+        // 날짜별로 데이터 합치기
         const combinedData = tempData.map(temp => {
+            // 예보 데이터에서 같은 날짜의 오전/오후 데이터를 모두 찾기
             const forecasts = forecastData.filter(f => f.forecastDate === temp.forecastDate);
+            
             const response: any = {
                 location: {
                     sido,
@@ -240,8 +247,10 @@ export class MidTempService {
                     afternoon: forecasts.find(f => f.forecastTimePeriod === '오후')
                 };
             }
+
             return response;
         });
+
         return combinedData;
     }
 }
