@@ -1,18 +1,21 @@
 import {
+  BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AlertsService } from './alert.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { User } from '../users/entities/user.entity';
-import { CreateAlertSettingDto } from './dto/create-alert-setting.dto';
-import { UpdateAlertSettingDto } from './dto/update-alert-setting.dto';
+import { AlertSettingService } from '../services/alert-setting.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { User } from '../../users/entities/user.entity';
+import { CreateAlertSettingDto } from '../dto/create-alert-setting.dto';
+import { UpdateAlertSettingDto } from '../dto/update-alert-setting.dto';
 import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -22,8 +25,8 @@ import { ResponseDto } from 'src/common/dto/response.dto';
 @ApiBearerAuth()
 @Controller('alert-settings')
 @UseGuards(JwtAuthGuard)
-export class AlertController {
-  constructor(private readonly alertsService: AlertsService) {}
+export class AlertSettingController {
+  constructor(private readonly alertsService: AlertSettingService) {}
 
   @Post()
   @ApiOperation({
@@ -36,16 +39,32 @@ export class AlertController {
   })
   @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
+  @ApiResponse({ status: 409, description: '이미 존재하는 설정입니다.' })
   async create(
     @RequestUser() user: User,
     @Body() dto: CreateAlertSettingDto,
   ): Promise<ResponseDto> {
-    const data = await this.alertsService.create(user, dto);
-    return new ResponseDto({
-      success: true,
-      message: '알림 설정이 성공적으로 생성되었습니다.',
-      data,
-    });
+    try {
+      const data = await this.alertsService.create(user, dto);
+      return new ResponseDto({
+        success: true,
+        message: '알림 설정이 성공적으로 생성되었습니다.',
+        data,
+      });
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException({
+          statusCode: 409,
+          message: error.message,
+          error: 'Conflict',
+        });
+      }
+      throw new BadRequestException({
+        statusCode: 400,
+        message: error.message || '알림 설정 생성에 실패했습니다.',
+        error: 'Bad Request',
+      });
+    }
   }
 
   @Get()
@@ -83,12 +102,27 @@ export class AlertController {
     @Param('id') id: string,
     @Body() dto: UpdateAlertSettingDto,
   ): Promise<ResponseDto> {
-    const data = await this.alertsService.update(id, dto);
-    return new ResponseDto({
-      success: true,
-      message: '알림 설정이 성공적으로 수정되었습니다.',
-      data,
-    });
+    try {
+      const data = await this.alertsService.update(id, dto);
+      return new ResponseDto({
+        success: true,
+        message: '알림 설정이 성공적으로 수정되었습니다.',
+        data,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: error.message || '해당 알림 설정을 찾을 수 없습니다.',
+          error: 'Not Found',
+        });
+      }
+      throw new BadRequestException({
+        statusCode: 400,
+        message: error.message || '알림 설정 수정에 실패했습니다.',
+        error: 'Bad Request',
+      });
+    }
   }
 
   @Delete(':id')
@@ -103,10 +137,21 @@ export class AlertController {
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
   @ApiResponse({ status: 404, description: '알림 설정을 찾을 수 없습니다.' })
   async remove(@Param('id') id: string): Promise<ResponseDto> {
-    await this.alertsService.remove(id);
-    return new ResponseDto({
-      success: true,
-      message: '알림 설정이 성공적으로 삭제되었습니다.',
-    });
+    try {
+      await this.alertsService.remove(id);
+      return new ResponseDto({
+        success: true,
+        message: '알림 설정이 성공적으로 삭제되었습니다.',
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: error.message || '해당 알림 설정을 찾을 수 없습니다.',
+          error: 'Not Found',
+        });
+      }
+      throw error;
+    }
   }
 }

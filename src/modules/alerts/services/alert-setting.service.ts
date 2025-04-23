@@ -6,14 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AlertSetting } from './entities/alert_setting.entity';
-import { CreateAlertSettingDto } from './dto/create-alert-setting.dto';
-import { UpdateAlertSettingDto } from './dto/update-alert-setting.dto';
+import { AlertSetting } from '../entities/alert_setting.entity';
+import { CreateAlertSettingDto } from '../dto/create-alert-setting.dto';
+import { UpdateAlertSettingDto } from '../dto/update-alert-setting.dto';
 import { User } from 'src/modules/users/entities/user.entity';
-import { WeatherAirService } from '../weather/service/weather-air.service';
+import { WeatherAirService } from '../../weather/service/weather-air.service';
 
 @Injectable()
-export class AlertsService {
+export class AlertSettingService {
   constructor(
     @InjectRepository(AlertSetting)
     private readonly alertSettingRepository: Repository<AlertSetting>,
@@ -55,7 +55,6 @@ export class AlertsService {
     const newSetting = new AlertSetting();
     newSetting.user = user;
     newSetting.type = createAlertSettingdto.type;
-    newSetting.condition = createAlertSettingdto.condition;
     newSetting.active = createAlertSettingdto.active;
 
     // type에 따라 unit 자동 설정
@@ -104,6 +103,13 @@ export class AlertsService {
     });
   }
 
+  async findAllActiveSettings(): Promise<AlertSetting[]> {
+    return this.alertSettingRepository.find({
+      where: { active: true },
+      relations: ['user', 'user.location'],
+    });
+  }
+
   async update(
     id: string,
     updateAlertSettingDto: UpdateAlertSettingDto,
@@ -136,8 +142,6 @@ export class AlertsService {
       }
     }
 
-    if (updateAlertSettingDto.condition)
-      setting.condition = updateAlertSettingDto.condition;
     if (updateAlertSettingDto.active !== undefined)
       setting.active = updateAlertSettingDto.active;
 

@@ -24,7 +24,7 @@ import { DbConfigService } from './config/db/config.service';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot(AppDataSource.options),
-    // ScheduleModule.forRoot(), //api호출 테스트 아닐시에는 주석처리부탁드립니다.
+    ScheduleModule.forRoot(), //api호출 테스트 아닐시에는 주석처리부탁드립니다.
     UsersModule,
     AuthModule,
     LoginLogsModule,
@@ -35,7 +35,13 @@ import { DbConfigService } from './config/db/config.service';
     AlertsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, InitService, LocationsService, RegionService, DbConfigService],
+  providers: [
+    AppService,
+    InitService,
+    LocationsService,
+    RegionService,
+    DbConfigService,
+  ],
 })
 export class AppModule {
   constructor(private readonly initService: InitService) {}
