@@ -20,6 +20,7 @@ import { RequestUser } from 'src/common/decorators/request-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto/response.dto';
+import { ToggleAllAlertsDto } from '../dto/toggle-all-alerts.dto';
 
 @ApiTags('알림 설정')
 @ApiBearerAuth()
@@ -153,5 +154,27 @@ export class AlertSettingController {
       }
       throw error;
     }
+  }
+
+  @Patch('toggle-all')
+  @ApiOperation({
+    summary: '모든 알림 설정 활성화/비활성화',
+    description: '사용자의 모든 알림 설정을 한 번에 켜거나 끕니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '모든 알림 설정의 활성화 상태가 성공적으로 변경되었습니다.',
+  })
+  @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
+  async toggleAllAlerts(
+    @RequestUser() user: User,
+    @Body() toggleAllAlertsDto: ToggleAllAlertsDto,
+  ): Promise<ResponseDto> {
+    await this.alertsService.toggleAll(user.id, toggleAllAlertsDto.active);
+    return new ResponseDto({
+      success: true,
+      message: '모든 알림 설정 상태가 변경되었습니다.',
+    });
   }
 }
