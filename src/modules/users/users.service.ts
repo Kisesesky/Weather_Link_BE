@@ -130,41 +130,40 @@ export class UsersService {
     const DEFAULT_PROFILE_IMAGE =
       'https://i.postimg.cc/ZRBFR9bq/profile-Image-default.png';
 
-    // 일반 회원가입
-    if (signUpDto.registerType === RegisterType.EMAIL) {
-      if (profileImage) {
-        try {
-          const url = await this.s3Service.uploadImage(
-            profileImage,
-            'profiles',
-          );
-          return url;
-        } catch (error) {
-          console.error('S3 업로드 실패:', error);
-          return DEFAULT_PROFILE_IMAGE;
-        }
+    // 파일이 존재하고, registerType EMAIL인 경우 S3 업로드 시도
+    if (
+      profileImage &&
+      (signUpDto.registerType === undefined ||
+        signUpDto.registerType === RegisterType.EMAIL)
+    ) {
+      try {
+        const url = await this.s3Service.uploadImage(profileImage, 'profiles');
+        console.log('S3 업로드 성공 URL:', url);
+        return url;
+      } catch (error) {
+        console.error('S3 업로드 실패:', error);
+        return DEFAULT_PROFILE_IMAGE;
       }
-      return DEFAULT_PROFILE_IMAGE;
     }
 
-    // 소셜 로그인 (GOOGLE, KAKAO, NAVER)
+    // 소셜 로그인 처리 (registerType GOOGLE, KAKAO, NAVER인 경우)
     if (
       signUpDto.registerType === RegisterType.GOOGLE ||
       signUpDto.registerType === RegisterType.KAKAO ||
       signUpDto.registerType === RegisterType.NAVER
     ) {
-      // 소셜 로그인에서 제공한 프로필 이미지 URL이 있는 경우
+      // 소셜 로그인에서 제공한 프로필 이미지 URL(문자열)이 있는 경우
       if (
         typeof signUpDto.profileImage === 'string' &&
         signUpDto.profileImage
       ) {
         return signUpDto.profileImage;
       }
-      // 소셜 로그인에서 프로필 이미지를 제공하지 않은 경우
+      // 소셜 로그인인데 DTO에 이미지 URL 없으면 기본 이미지
       return DEFAULT_PROFILE_IMAGE;
     }
 
-    // 위의 모든 조건에 해당하지 않는 경우 (예상치 못한 경우)
+    // 파일이 없는 경우 기본 이미지 반환
     return DEFAULT_PROFILE_IMAGE;
   }
 
@@ -275,8 +274,9 @@ export class UsersService {
       }
     }
 
-    // 사용자 정보 업데이트
-    Object.assign(user, updateUserDto);
+    // 사용자 정보 업데이트 (DTO 필드 병합 전 profileImage 제거)
+    const { profileImage: _, ...dtoToAssign } = updateUserDto;
+    Object.assign(user, dtoToAssign); // profileImage 제외된 DTO 사용
 
     const updatedUser = await this.usersRepository.save(user);
     const { password, ...rest } = updatedUser;
