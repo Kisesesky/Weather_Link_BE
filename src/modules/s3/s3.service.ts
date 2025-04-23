@@ -24,6 +24,7 @@ export class S3Service {
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
+      ASL: 'public-read',
     };
 
     await this.s3.send(new PutObjectCommand(uploadParams));
