@@ -92,11 +92,4 @@ export class SignUpDto {
   })
   @IsString()
   gugun: string;
-
-  @ApiProperty({
-    description: '동',
-    example: '역삼1동',
-  })
-  @IsString()
-  dong: string;
 }

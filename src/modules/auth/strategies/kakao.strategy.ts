@@ -45,7 +45,6 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
       locationAgreed: false,
       sido: '서울특별시',
       gugun: '강남구',
-      dong: '역삼1동',
     });
 
     return newUser;

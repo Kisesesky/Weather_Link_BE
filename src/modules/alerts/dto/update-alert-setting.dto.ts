@@ -18,12 +18,6 @@ const airQualityGrades = ['좋음', '보통', '나쁨', '매우 나쁨'] as cons
 type AirQualityGrade = (typeof airQualityGrades)[number];
 
 export class UpdateAlertSettingDto {
-  // Type is usually not updatable, but include if needed
-  // @ApiProperty({ description: '알림 유형', example: 'TEMPERATURE', required: false, enum: alertTypes })
-  // @IsOptional()
-  // @IsEnum(alertTypes)
-  // type?: AlertType;
-
   @ApiProperty({
     description:
       '업데이트할 임계치 (온도/습도/바람: 숫자, 미세먼지: 등급 문자열)',
