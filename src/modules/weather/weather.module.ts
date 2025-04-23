@@ -35,7 +35,12 @@ import { WeatherResponseController } from './controllers/weather-response.contro
     LocationsModule,
     HttpModule,
   ],
-  controllers: [WeatherController, MidTempController, WeatherCollectiorController, WeatherResponseController],
+  controllers: [
+    WeatherController,
+    MidTempController,
+    WeatherCollectiorController,
+    WeatherResponseController,
+  ],
   providers: [
     WeatherService,
     WeatherAirService,
@@ -47,6 +52,6 @@ import { WeatherResponseController } from './controllers/weather-response.contro
     WeatherCollectiorController,
     WeatherResponseController,
   ],
-  exports: [WeatherAirService],
+  exports: [WeatherAirService, TodayForecastService],
 })
 export class WeatherModule {}

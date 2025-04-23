@@ -6,14 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AlertSetting } from './entities/alert_setting.entity';
-import { CreateAlertSettingDto } from './dto/create-alert-setting.dto';
-import { UpdateAlertSettingDto } from './dto/update-alert-setting.dto';
+import { AlertSetting } from '../entities/alert_setting.entity';
+import { CreateAlertSettingDto } from '../dto/create-alert-setting.dto';
+import { UpdateAlertSettingDto } from '../dto/update-alert-setting.dto';
 import { User } from 'src/modules/users/entities/user.entity';
-import { WeatherAirService } from '../weather/service/weather-air.service';
+import { WeatherAirService } from '../../weather/service/weather-air.service';
 
 @Injectable()
-export class AlertsService {
+export class AlertSettingService {
   constructor(
     @InjectRepository(AlertSetting)
     private readonly alertSettingRepository: Repository<AlertSetting>,
@@ -100,6 +100,13 @@ export class AlertsService {
   async findAllByUser(userId: string): Promise<AlertSetting[]> {
     return this.alertSettingRepository.find({
       where: { user: { id: userId } },
+    });
+  }
+
+  async findAllActiveSettings(): Promise<AlertSetting[]> {
+    return this.alertSettingRepository.find({
+      where: { active: true },
+      relations: ['user', 'user.location'],
     });
   }
 

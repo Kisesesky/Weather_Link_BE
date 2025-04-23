@@ -22,4 +22,5 @@ export interface ForecastTimeSlot {
   precipitationType: string | null;
   humidity: number | null;
   snowfall: string | null;
+  windSpeed: number | null;
 }
