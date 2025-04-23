@@ -12,7 +12,7 @@ import { paginate } from 'src/utils/pagination.util';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { User } from '../users/entities/user.entity';
 import { ILike } from 'typeorm';
-import { UserBasicInfoDto } from 'src/common/dto/user-basic-info.dto';
+import { UserBasicInfoDto } from 'src/modules/users/dto/user-basic-info.dto';
 
 @Injectable()
 export class FriendsService {
