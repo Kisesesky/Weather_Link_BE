@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { AwsConfigService } from 'src/config/aws/config.service';
 
 @Injectable()
@@ -19,11 +19,12 @@ export class S3Service {
   async uploadImage(file: Express.Multer.File, dirPath: string) {
     const fileName = `${dirPath}/${Date.now()}`;
 
-    const uploadParams = {
+    const uploadParams: PutObjectCommandInput  = {
       Bucket: this.awsConfigService.awsBucketName,
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
+      ACL: "public-read",
     };
 
     await this.s3.send(new PutObjectCommand(uploadParams));

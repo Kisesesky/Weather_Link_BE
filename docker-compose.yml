@@ -56,7 +56,7 @@ services:
 
   nestjs-app:
     build: .
-    image: hoyaa/weather-link-app:latest
+    image: hoyaa/weather_link:latest
     container_name: weather_link_app
     restart: always
     depends_on:
