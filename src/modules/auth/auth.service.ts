@@ -17,6 +17,7 @@ import { validatePassword } from 'src/utils/password-validator';
 import { LoginLogsService } from '../login-logs/login-logs.service';
 import { LocationsService } from '../locations/service/locations.service';
 import { SocialSignupDto } from './dto/social-sign-up.dto';
+import { RegisterType } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -74,6 +75,10 @@ export class AuthService {
 
   async logAndMakeToken(email: string, origin: string) {
     const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+    // 이미 가입된 사용자의 로그인 로그 기록 및 마지막 로그인 시간 업데이트
     const loginLog = await this.loginLogsService.create(user.id);
     await this.usersService.updateLastLogin(user.id, loginLog.login_time);
 
@@ -140,7 +145,7 @@ export class AuthService {
     const maxAge = 3600 * 1000;
     const accessToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
     return {
       accessToken,
@@ -153,7 +158,7 @@ export class AuthService {
     const maxAge = 30 * 24 * 3600 * 1000;
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
     return {
       refreshToken,
@@ -312,12 +317,89 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
 
     return {
       accessToken,
       accessOptions: this.setCookieOption(maxAge, origin),
     };
+  }
+
+  // 임시 토큰 생성 (신규 사용자용)
+  createSocialTemporaryToken(profile: any, origin: string) {
+    // profile 객체에는 email, socialId, name, profileImage, registerType 포함됨
+    const payload = { profile, isTemporary: true }; // 임시 토큰임을 명시
+    const maxAge = 30 * 60 * 1000; // 30분 유효
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge / 1000,
+    });
+
+    return {
+      accessToken,
+      accessOptions: this.setCookieOption(maxAge, origin), // 쿠키 옵션 설정
+    };
+  }
+
+  // 추가 정보 입력 완료 후 최종 회원가입 처리
+  async completeNewSocialUserSignup(
+    tempTokenPayload: any, // 임시 토큰에서 추출한 페이로드
+    socialSignupDto: SocialSignupDto,
+    origin: string, // 쿠키 설정을 위해 필요
+  ) {
+    // 1. 약관 동의 검증
+    if (
+      String(socialSignupDto.termsAgreed) !== 'true' ||
+      String(socialSignupDto.locationAgreed) !== 'true'
+    ) {
+      throw new BadRequestException('모든 필수 약관에 동의해야 합니다.');
+    }
+
+    // 2. 위치 정보 조회
+    const location = await this.locationsService.findBySidoGugun(
+      socialSignupDto.sido,
+      socialSignupDto.gugun,
+    );
+    if (!location) {
+      throw new BadRequestException('유효하지 않은 위치 정보입니다.');
+    }
+
+    // 3. 사용자 생성 DTO 준비
+    const createUserDto = {
+      ...tempTokenPayload.profile, // 임시 토큰의 소셜 프로필 정보
+      termsAgreed: socialSignupDto.termsAgreed,
+      locationAgreed: socialSignupDto.locationAgreed,
+      sido: socialSignupDto.sido,
+      gugun: socialSignupDto.gugun,
+      location: location, // 조회된 위치 엔티티
+    };
+
+    // 4. UsersService를 통해 사용자 생성
+    // 주의: usersService.createUser가 profileImage URL을 처리하는 방식 확인 필요
+    const { profileImage, ...restOfCreateUserDto } = createUserDto;
+    const newUser = await this.usersService.createUser(restOfCreateUserDto); // password 필드가 없으므로 createUser 수정 필요할 수 있음
+
+    // 4.1. 프로필 이미지 URL 업데이트 (필요시)
+    if (profileImage && newUser) {
+      // usersService에 updateUserProfileImage 메서드가 구현되어 있어야 함
+      try {
+        await this.usersService.updateUserProfileImage(
+          newUser.id,
+          profileImage,
+        );
+      } catch (e) {
+        console.error('Error updating profile image during social signup:', e);
+        // 이미지 업데이트 실패가 전체 가입 실패를 의미하진 않도록 처리 (선택적)
+      }
+    }
+
+    // 5. 로그인 로그 기록 및 마지막 로그인 시간 업데이트
+    const loginLog = await this.loginLogsService.create(newUser.id);
+    await this.usersService.updateLastLogin(newUser.id, loginLog.login_time);
+
+    // 6. 정식 JWT 토큰 발급
+    return this.makeJwtToken(newUser.email, origin);
   }
 }

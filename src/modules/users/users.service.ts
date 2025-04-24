@@ -232,6 +232,21 @@ export class UsersService {
       .where('LOWER(user.name) LIKE LOWER(:name)', { name: `%${name}%` });
   }
 
+  // 소셜 가입 시 프로필 이미지 업로드한 경우 사용
+  async updateUserProfileImage(
+    userId: string,
+    profileImageUrl: string,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found.`);
+    }
+
+    user.profileImage = profileImageUrl;
+    await this.usersRepository.save(user);
+  }
+
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
