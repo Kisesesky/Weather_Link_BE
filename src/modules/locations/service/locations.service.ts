@@ -207,6 +207,23 @@ export class LocationsService {
     return location;
   }
 
+  async findByIdLocation(id: string) {
+    const location = await this.locationsRepository
+      .createQueryBuilder('location')
+      .select(['location.sido', 'location.gugun'])
+      .where('location.id = :id', { id })
+      .getOne();
+  
+    if (!location) {
+      throw new NotFoundException('해당 위치를 찾을 수 없습니다.');
+    }
+  
+    return {
+      sido: location.sido,
+      gugun: location.gugun || ''
+    };
+  }
+
   async getDistinctSido(): Promise<string[]> {
     const result = await this.locationsRepository
       .createQueryBuilder('location')
