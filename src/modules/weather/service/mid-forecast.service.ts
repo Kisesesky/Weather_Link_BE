@@ -47,6 +47,11 @@ export class MidForecastService {
   async deleteOldForecastsManually() {
     return this.deleteOldForecasts();
   }
+  
+  @Cron('10 */12 * * *') // sub용 12시에 수집 못할경우
+  async subMidForecasts() {
+    const result = await this.fetchAndSaveMidForecasts()
+  }
 
   @Cron('0 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
   async fetchAndSaveMidForecasts(regionCode?: string): Promise<void> {

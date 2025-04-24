@@ -32,9 +32,12 @@ export class WeatherResponseController {
       @Query('gugun') gugun?: string
     ): Promise<WeatherResponseDto<any>> {
       try {
-        const currentWeather = await this.dailyForecastService.getCurrentWeatherByRegionName(sido, gugun);
-        const todayForecast = await this.todayForecastService.getForecastDataByRegionName(sido, gugun);
-        const location = await this.weatherAirService.findLocationByRegionName(sido);
+        const [currentWeather, todayForecast, location] = await Promise.all([
+          this.dailyForecastService.getCurrentWeatherByRegionName(sido, gugun),
+          this.todayForecastService.getForecastDataByRegionName(sido, gugun),
+          this.weatherAirService.findLocationByRegionName(sido)
+        ]);
+    
         if (!location) {
           throw new NotFoundException('해당 지역을 찾을 수 없습니다.');
         }
