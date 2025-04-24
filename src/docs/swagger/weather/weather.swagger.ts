@@ -31,7 +31,7 @@ export const todayWeather = () => {
 }
 export const todayForecast = () => {
     return ApiOperation({
-      summary: '오늘의 날씨 정보 오늘의 날씨 예보 조회',
+      summary: '오늘의 날씨 예보 조회',
       description: `
         응답 예시:
             {

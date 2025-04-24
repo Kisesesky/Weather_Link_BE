@@ -11,4 +11,6 @@ export default registerAs('weather', () => ({
   dayForecastApiUrl: process.env.DAY_FORECAST_API_URL,
   dailyForecastApiKey: process.env.DAILY_FORECAST_API_KEY,
   dailyForecastApiUrl: process.env.DAILY_FORECAST_API_URL,
+  subDailyForecastApiKey: process.env.SUB_DAILY_FORECAST_API_KEY,
+  subDailyForecastApiUrl: process.env.SUB_DAILY_FORECAST_API_URL,
 }));

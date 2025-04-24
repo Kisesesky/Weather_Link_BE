@@ -9,6 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 import { RegionEntity } from 'src/modules/locations/entities/region.entity';
 import { Cron } from '@nestjs/schedule';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class DailyForecastService {
@@ -96,8 +97,28 @@ export class DailyForecastService {
     return `${String(hour).padStart(2, '0')}00`;
   }
 
+  @Cron('0 0 0 * * *') // 매일 자정에 실행
+  async deleteOldForecasts() {
+      try {
+          const sevenDaysAgo = dayjs().subtract(7, 'day').format('YYYYMMDD');
+          const result = await this.dailyForecastRepository
+              .createQueryBuilder()
+              .delete()
+              .where('createdAt <= :date', { date: sevenDaysAgo })
+              .execute();
+          
+          if (result.affected && result.affected > 0) {
+              this.logger.log(`${result.affected}개의 오래된 일기 예보 데이터가 삭제되었습니다.`);
+          } else {
+              this.logger.debug('삭제할 오래된 일기 예보 데이터가 없습니다.');
+          }
+      } catch (error) {
+          this.logger.error('오래된 일기 예보 데이터 삭제 중 오류 발생:', error);
+      }
+  }
+
   // 모든 지역의 날씨 데이터 수집 및 저장
-  @Cron('0 */1 * * *') //1시간 간격 자동수집
+  @Cron('10 */1 * * *') //1시간 10분 간격 자동수집
   async collectAllRegionsWeather() {
     try {
       // 모든 region 데이터 조회 (nx, ny가 있는 것만)
@@ -237,23 +258,52 @@ export class DailyForecastService {
   // 시도/구군으로 현재 날씨 조회
   async getCurrentWeatherByRegionName(sido: string, gugun?: string) {
     try {
-      // 1. LocationEntity 찾기
-      const location = await this.locationsRepository
+      // 1. LocationEntity에서 nx, ny 값을 이용하여 RegionEntity 조회
+      const locationQuery = this.locationsRepository
         .createQueryBuilder('location')
         .where('location.sido = :sido', { sido });
-
+    
       if (gugun) {
-        location.andWhere('location.gugun = :gugun', { gugun });
+        locationQuery.andWhere('location.gugun = :gugun', { gugun });
       }
-
-      const locationEntity = await location.getOne();
-      
+    
+      const locationEntity = await locationQuery.getOne();
+    
       if (!locationEntity) {
         throw new NotFoundException('해당 지역을 찾을 수 없습니다.');
       }
-
-      // 2. 현재 날씨 조회
-      return this.getCurrentWeather(locationEntity.nx, locationEntity.ny);
+  
+      // 2. LocationEntity에서 nx, ny 값으로 RegionEntity를 찾기
+      const regionEntity = await this.regionRepository
+        .createQueryBuilder('region')
+        .where('region.nx = :nx', { nx: locationEntity.nx })
+        .andWhere('region.ny = :ny', { ny: locationEntity.ny })
+        .getOne();
+    
+      if (!regionEntity) {
+        throw new NotFoundException('해당 지역의 Region 정보를 찾을 수 없습니다.');
+      }
+  
+      // 3. RegionId로 daily_forecast 조회 (region 객체를 사용)
+      const dailyForecast = await this.dailyForecastRepository
+        .createQueryBuilder('forecast')
+        .where('forecast.region_id = :region_id', { region_id: regionEntity.id })  // regionId를 기준으로 조회
+        .orderBy('forecast.createdAt', 'DESC')  // 최신 데이터부터 조회
+        .getOne();
+    
+      if (!dailyForecast) {
+        throw new NotFoundException('해당 지역의 최신 날씨 데이터가 없습니다.');
+      }
+    
+      // 4. 날씨 데이터 반환
+      return {
+        temperature: dailyForecast.temperature,
+        humidity: dailyForecast.humidity,
+        rainfall: dailyForecast.rainfall,
+        windSpeed: dailyForecast.windSpeed,
+        windDirection: dailyForecast.windDirection,
+        perceivedTemperature: dailyForecast.perceivedTemperature,
+      };
     } catch (error) {
       this.logger.error(`날씨 데이터 요청 실패: ${error.message}`);
       throw error;

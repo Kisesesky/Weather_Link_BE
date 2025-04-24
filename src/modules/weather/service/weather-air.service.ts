@@ -22,6 +22,11 @@ export class WeatherAirService {
     private readonly weatherConfigService: WeatherConfigService
   ) {}
 
+  @Cron('0 */2 * * *') //2시간마다 데이터 수집
+  async subAirQuailty() {
+    const result = await this.fetchAllAirQuality()
+  }
+
   @Cron('15 */2 * * *') //2시간 15분 간격... 정각에 바로 데이터가 업데이트되지 않을수도잇음
   async handleAirQualityJob() {
     this.logger.log('미세먼지 데이터 수집')
