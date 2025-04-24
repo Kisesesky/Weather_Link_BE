@@ -38,7 +38,7 @@ import { SocialSignupDto } from '../dto/social-sign-up.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { AppConfigService } from 'src/config/app/config.service';
 
-// Google Strategy의 socialProfile 타입과 유사하게 정의 (실제 타입 경로에 맞게 조정 필요)
+// socialProfile 타입
 interface SocialProfile {
   email: string;
   socialId: string;
@@ -180,22 +180,35 @@ export class AuthController {
   @Get('kakao/callback')
   @UseGuards(KakaoAuthGuard)
   kakaoCallback(
-    @RequestUser() user: User,
+    @RequestUser() userOrProfile: User | SocialProfile,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     try {
-      const { accessToken, accessOptions } =
-        this.authService.createTemporaryToken(user.email, origin);
+      const frontendUrl = this.appConfigService.frontendUrl;
 
-      res.cookie('Authentication', accessToken, accessOptions);
-
-      return res.redirect(`${origin}/signup/social/complete`);
+      if (userOrProfile && 'id' in userOrProfile) {
+        const user = userOrProfile;
+        const { accessToken, refreshToken, accessOptions, refreshOptions } =
+          this.authService.makeJwtToken(user.email, origin);
+        res.cookie('Authentication', accessToken, accessOptions);
+        res.cookie('Refresh', refreshToken, refreshOptions);
+        return res.redirect(`${frontendUrl}/main`);
+      } else if (userOrProfile && 'email' in userOrProfile) {
+        const socialProfile = userOrProfile;
+        const { accessToken, accessOptions } =
+          this.authService.createSocialTemporaryToken(socialProfile, origin);
+        res.cookie('Authentication', accessToken, accessOptions);
+        return res.redirect(`${frontendUrl}/signup/social/complete`);
+      } else {
+        throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
+      }
     } catch (error) {
+      console.error('Kakao callback error:', error);
       throw new BadRequestException({
         statusCode: 400,
-        message: '카카오 로그인에 실패했습니다.',
-        error: 'Bad Request',
+        message: '카카오 로그인 처리 중 오류가 발생했습니다.',
+        error: error.message || 'Bad Request',
       });
     }
   }
@@ -214,22 +227,35 @@ export class AuthController {
   @Get('naver/callback')
   @UseGuards(NaverAuthGuard)
   naverCallback(
-    @RequestUser() user: User,
+    @RequestUser() userOrProfile: User | SocialProfile,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
     try {
-      const { accessToken, accessOptions } =
-        this.authService.createTemporaryToken(user.email, origin);
+      const frontendUrl = this.appConfigService.frontendUrl;
 
-      res.cookie('Authentication', accessToken, accessOptions);
-
-      return res.redirect(`${origin}/signup/social/complete`);
+      if (userOrProfile && 'id' in userOrProfile) {
+        const user = userOrProfile;
+        const { accessToken, refreshToken, accessOptions, refreshOptions } =
+          this.authService.makeJwtToken(user.email, origin);
+        res.cookie('Authentication', accessToken, accessOptions);
+        res.cookie('Refresh', refreshToken, refreshOptions);
+        return res.redirect(`${frontendUrl}/main`);
+      } else if (userOrProfile && 'email' in userOrProfile) {
+        const socialProfile = userOrProfile;
+        const { accessToken, accessOptions } =
+          this.authService.createSocialTemporaryToken(socialProfile, origin);
+        res.cookie('Authentication', accessToken, accessOptions);
+        return res.redirect(`${frontendUrl}/signup/social/complete`);
+      } else {
+        throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
+      }
     } catch (error) {
+      console.error('Naver callback error:', error);
       throw new BadRequestException({
         statusCode: 400,
-        message: '네이버 로그인에 실패했습니다.',
-        error: 'Bad Request',
+        message: '네이버 로그인 처리 중 오류가 발생했습니다.',
+        error: error.message || 'Bad Request',
       });
     }
   }

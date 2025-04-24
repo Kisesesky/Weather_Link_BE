@@ -29,30 +29,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: Profile,
     done: VerifyCallback,
   ): Promise<any> {
-    this.logger.log(
-      `[Google Validate] 프로필 ID로 유효성 검사 시작: ${profile.id}`,
-    );
-
     const registerType = RegisterType.GOOGLE;
     try {
-      this.logger.log(
-        `[Google Validate] 소셜 ID로 사용자 조회: ${profile.id}`,
-      );
       const user = await this.usersService.findUserBySocialId(
         profile.id,
         registerType,
       );
 
       if (user) {
-        this.logger.log(
-          `[Google Validate] 기존 사용자 발견: ${user.email}`,
-        );
         return done(null, user);
       }
 
-      this.logger.log(
-        `[Google Validate] 새로운 사용자 감지: ${profile._json.email}`,
-      );
       const socialProfile = {
         email: profile._json.email,
         socialId: profile.id,
