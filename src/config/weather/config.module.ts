@@ -21,6 +21,8 @@ import { WeatherConfigService } from './config.service';
         DAILY_FORECAST_API_URL: Joi.string().required(),
         SUB_DAILY_FORECAST_API_KEY: Joi.string().required(),
         SUB_DAILY_FORECAST_API_URL: Joi.string().required(),
+        SUB_TODAY_FORECAST_API_KEY: Joi.string().required(),
+        SUB_TODAY_FORECAST_API_URL: Joi.string().required(),
       }),
       isGlobal: true,
     }),

@@ -10,7 +10,6 @@ import { Cron } from "@nestjs/schedule";
 import { ForecastTimeSlot } from "../interface/weather-interface";
 import { firstValueFrom } from "rxjs";
 import { RegionEntity } from "src/modules/locations/entities/region.entity";
-import * as dayjs from "dayjs";
 
 @Injectable()
 export class SubTodayForecastService {
@@ -70,17 +69,14 @@ export class SubTodayForecastService {
     }
 
     private async getSubForecastByRegion(nx: number, ny: number): Promise<ForecastTimeSlot[]> {
-        const serviceUrl = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
-        const authKey = 'oYIwHqmwxdjby411eO7nV638l51i5U0HWbthm0OfSKKNdDDx%2FjuAx7lKefQFPjWBMHdXCR9RyZpeOgFea7KpXQ%3D%3D';
+        const serviceUrl = this.weatherConfigService.subTodayForecastApiUrl as string;
+        const authKey = this.weatherConfigService.subTodayForecastApiKey as string;
         const baseDate = moment().format('YYYYMMDD');
         const baseTime = '0500';
 
         try {
-            const url = `${serviceUrl}?serviceKey=${authKey}&pageNo=1&numOfRows=1000&dataType=json&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
-            this.logger.debug(`Requesting forecast with URL: ${url}`);
-            
+            const url = `${serviceUrl}serviceKey=${authKey}&pageNo=1&numOfRows=1000&dataType=json&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
             const { data } = await firstValueFrom(this.httpService.get(url));
-            this.logger.debug(`API Response: ${JSON.stringify(data)}`);
 
             if (data?.response?.header?.resultCode !== '00') {
                 this.logger.error(`API Error: ${data?.response?.header?.resultMsg}`);
@@ -88,7 +84,6 @@ export class SubTodayForecastService {
             }
 
             const forecastItems = data.response?.body?.items?.item ?? [];
-            
             const categories = ['TMP', 'SKY', 'POP', 'PTY', 'REH', 'SNO'];
             const filtered = forecastItems.filter((item) =>
                 categories.includes(item.category)
@@ -157,8 +152,6 @@ export class SubTodayForecastService {
                 .where('region.nx IS NOT NULL')
                 .andWhere('region.ny IS NOT NULL')
                 .getMany();
-
-            this.logger.log(`Starting to collect weather data for ${regions.length} regions`);
 
             // 각 지역별 예보 데이터 수집을 병렬로 처리
             const forecastResults = await Promise.allSettled(
@@ -249,8 +242,13 @@ export class SubTodayForecastService {
             throw error;
         }
     }
+    @Cron('15 5 * * *')  // 매일 05시 15분에 실행 실패시
+    async failCollect(){
+        const result = await this.subCollectAllRegionsWeatherOnlyMissing()
+    }
 
-    @Cron('30 5 * * *')  // 매일 05시 30분에 실행
+
+    @Cron('10 5 * * *')  // 매일 05시 10분에 실행
     async subCollectAllRegionsWeatherOnlyMissing() {
         try {
             const existingRegionIds = await this.todayForecastRepository
