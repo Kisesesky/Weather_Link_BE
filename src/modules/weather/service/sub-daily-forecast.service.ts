@@ -28,12 +28,12 @@ export class SubDailyForecastService {
 
   // 날씨 조회하기 nx,ny
   async getSubCurrentWeather(nx: number, ny: number) {
-    const servicekey = this.weatherConfigService.subDayForecastApiUrl as string;
-    const serviceUrl = this.weatherConfigService.weatherAirApiKey as string;
+    const serviceUrl = this.weatherConfigService.subDailyForecastApiUrl as string;
+    const servicekey = this.weatherConfigService.subDailyForecastApiKey as string;
     const baseDate = this.getTodayDate();
     const baseTime = this.getBaseTime();
     
-    const url = `${servicekey}serviceKey=${serviceUrl}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`
+    const url = `${serviceUrl}serviceKey=${servicekey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`
     try {
       const { data } = await firstValueFrom(this.httpService.get(url));
 
@@ -115,6 +115,10 @@ export class SubDailyForecastService {
       } catch (error) {
           this.logger.error('오래된 일기 예보 데이터 삭제 중 오류 발생:', error);
       }
+  }
+  @Cron('0 */1 * * *') // 메인 실패할수있어 미리 가져오기
+  async subCollect() {
+    const result = this.subCollectAllRegionsWeather()
   }
   
   // 모든 지역의 날씨 데이터 수집 및 저장
