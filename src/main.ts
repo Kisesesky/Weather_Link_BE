@@ -15,18 +15,6 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(json());
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (
-      req.originalUrl === '/api/v1/auth/social/complete' &&
-      req.method === 'POST'
-    ) {
-      logger.debug(
-        `[BodyLoggerMiddleware] Parsed body BEFORE ValidationPipe for ${req.originalUrl}: ${JSON.stringify(req.body)}`,
-      );
-    }
-    next();
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

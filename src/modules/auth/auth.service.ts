@@ -18,9 +18,12 @@ import { LoginLogsService } from '../login-logs/login-logs.service';
 import { LocationsService } from '../locations/service/locations.service';
 import { SocialSignupDto } from './dto/social-sign-up.dto';
 import { RegisterType } from '../users/entities/user.entity';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -270,46 +273,6 @@ export class AuthService {
     return '비밀번호가 성공적으로 변경되었습니다.';
   }
 
-  async SocialSignup(userId: string, socialSignupDto: SocialSignupDto) {
-    // 약관 동의 검증
-    if (!socialSignupDto.termsAgreed || !socialSignupDto.locationAgreed) {
-      throw new BadRequestException('약관 동의가 필요합니다.');
-    }
-
-    // 위치 정보 찾기 (findBySidoGugun 사용)
-    console.log('위치 정보 조회:', {
-      sido: socialSignupDto.sido,
-      gugun: socialSignupDto.gugun,
-    });
-
-    const location = await this.locationsService.findBySidoGugun(
-      socialSignupDto.sido,
-      socialSignupDto.gugun,
-    );
-
-    if (!location) {
-      throw new BadRequestException('존재하지 않는 위치 정보입니다.');
-    }
-
-    // 사용자 정보 업데이트
-    const updatedUser = await this.usersService.completeSocialSignup(
-      userId,
-      socialSignupDto,
-      location,
-    );
-
-    // 약관 동의와 위치 설정이 완료된 사용자인지 확인
-    if (
-      !updatedUser.termsAgreed ||
-      !updatedUser.locationAgreed ||
-      !updatedUser.location
-    ) {
-      throw new BadRequestException('약관 동의와 위치 설정이 필요합니다.');
-    }
-
-    return updatedUser;
-  }
-
   // 임시 토큰 생성 메서드 (소셜 로그인 콜백에서 사용)
   createTemporaryToken(email: string, origin: string) {
     const payload = { sub: email, isTemporary: true };
@@ -349,57 +312,46 @@ export class AuthService {
     socialSignupDto: SocialSignupDto,
     origin: string, // 쿠키 설정을 위해 필요
   ) {
+    this.logger.log(
+      `[completeNewSocialUserSignup] 시작: ${tempTokenPayload?.email}`,
+    );
+
     // 1. 약관 동의 검증
     if (
-      String(socialSignupDto.termsAgreed) !== 'true' ||
-      String(socialSignupDto.locationAgreed) !== 'true'
+      socialSignupDto.termsAgreed !== true ||
+      socialSignupDto.locationAgreed !== true
     ) {
+      this.logger.warn(
+        `[completeNewSocialUserSignup] 약관 미동의: ${tempTokenPayload?.email}`,
+      ); // 약관 미동의 경고 유지
       throw new BadRequestException('모든 필수 약관에 동의해야 합니다.');
     }
 
-    // 2. 위치 정보 조회
+    // 2. 위치 찾기
     const location = await this.locationsService.findBySidoGugun(
       socialSignupDto.sido,
       socialSignupDto.gugun,
     );
     if (!location) {
+      this.logger.warn(
+        `[completeNewSocialUserSignup] 위치 없음: ${socialSignupDto.sido}, ${socialSignupDto.gugun}`,
+      ); // 위치 없음 경고 유지
       throw new BadRequestException('유효하지 않은 위치 정보입니다.');
     }
 
-    // 3. 사용자 생성 DTO 준비
-    const createUserDto = {
-      ...tempTokenPayload.profile, // 임시 토큰의 소셜 프로필 정보
+    // 3. 소셜 사용자 생성
+    // 토큰에서 프로필 정보와 DTO에서 추가 정보 전달
+    const newUser = await this.usersService.createSocialUser(tempTokenPayload, {
       termsAgreed: socialSignupDto.termsAgreed,
       locationAgreed: socialSignupDto.locationAgreed,
-      sido: socialSignupDto.sido,
-      gugun: socialSignupDto.gugun,
-      location: location, // 조회된 위치 엔티티
-    };
+      location: location,
+    });
 
-    // 4. UsersService를 통해 사용자 생성
-    // 주의: usersService.createUser가 profileImage URL을 처리하는 방식 확인 필요
-    const { profileImage, ...restOfCreateUserDto } = createUserDto;
-    const newUser = await this.usersService.createUser(restOfCreateUserDto); // password 필드가 없으므로 createUser 수정 필요할 수 있음
-
-    // 4.1. 프로필 이미지 URL 업데이트 (필요시)
-    if (profileImage && newUser) {
-      // usersService에 updateUserProfileImage 메서드가 구현되어 있어야 함
-      try {
-        await this.usersService.updateUserProfileImage(
-          newUser.id,
-          profileImage,
-        );
-      } catch (e) {
-        console.error('Error updating profile image during social signup:', e);
-        // 이미지 업데이트 실패가 전체 가입 실패를 의미하진 않도록 처리 (선택적)
-      }
-    }
-
-    // 5. 로그인 로그 기록 및 마지막 로그인 시간 업데이트
+    // 4. 신규 사용자 로그인 로그 기록
     const loginLog = await this.loginLogsService.create(newUser.id);
     await this.usersService.updateLastLogin(newUser.id, loginLog.login_time);
 
-    // 6. 정식 JWT 토큰 발급
+    // 5. 최종 JWT 토큰 발행
     return this.makeJwtToken(newUser.email, origin);
   }
 }

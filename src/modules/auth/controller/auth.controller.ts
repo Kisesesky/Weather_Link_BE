@@ -47,11 +47,6 @@ interface SocialProfile {
   registerType: RegisterType;
 }
 
-// 임시 토큰에서 오는 타입을 위한 인터페이스 정의
-interface TemporaryUserPayload {
-  email: string;
-}
-
 @ApiTags('유저 인증')
 @Controller('auth')
 export class AuthController {
@@ -153,7 +148,7 @@ export class AuthController {
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
-          this.authService.createTemporaryToken(socialProfile.email, origin);
+          this.authService.createSocialTemporaryToken(socialProfile, origin);
 
         res.cookie('Authentication', accessToken, accessOptions);
 
@@ -247,21 +242,15 @@ export class AuthController {
     description: '소셜 로그인 추가 정보 입력 완료 및 최종 로그인 토큰 반환',
   })
   async completeSocialSignup(
-    @RequestUser() userPayload: User | TemporaryUserPayload,
+    @RequestUser() userProfile: SocialProfile,
     @Body() socialSignupDto: SocialSignupDto,
     @RequestOrigin() origin: string,
     @Res() res: Response,
   ) {
-    // ValidationPipe 통과 직후의 socialSignupDto 내용 로깅
-    console.log(
-      '[completeSocialSignup] Received socialSignupDto:',
-      JSON.stringify(socialSignupDto),
-    );
-
     try {
       const { accessToken, refreshToken, accessOptions, refreshOptions } =
         await this.authService.completeNewSocialUserSignup(
-          userPayload,
+          userProfile,
           socialSignupDto,
           origin,
         );

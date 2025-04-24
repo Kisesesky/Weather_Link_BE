@@ -21,12 +21,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     };
 
     super(strategyOptions);
-
-    this.logger.log('[GoogleStrategy Constructor] Initialized with options:');
-    this.logger.log(`  clientID: ${strategyOptions.clientID}`);
-    this.logger.log(`  clientSecret loaded: ${!!strategyOptions.clientSecret}`);
-    this.logger.log(`  callbackURL: ${strategyOptions.callbackURL}`);
-    this.logger.log(`  scope: ${JSON.stringify(strategyOptions.scope)}`);
   }
 
   async validate(
@@ -36,36 +30,29 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<any> {
     this.logger.log(
-      `[Google Validate] Start validation for profile ID: ${profile.id}`,
+      `[Google Validate] 프로필 ID로 유효성 검사 시작: ${profile.id}`,
     );
-    this.logger.debug(`[Google Validate] Profile: ${JSON.stringify(profile)}`);
 
     const registerType = RegisterType.GOOGLE;
     try {
       this.logger.log(
-        `[Google Validate] Finding user by social ID: ${profile.id}`,
+        `[Google Validate] 소셜 ID로 사용자 조회: ${profile.id}`,
       );
-      // 1. DB에서 소셜 ID로 사용자 조회
       const user = await this.usersService.findUserBySocialId(
         profile.id,
         registerType,
       );
-      this.logger.log(`[Google Validate] User found: ${JSON.stringify(user)}`);
 
-      // 2. 기존 사용자인 경우
       if (user) {
         this.logger.log(
-          `[Google Validate] Existing user found. Returning user.`,
+          `[Google Validate] 기존 사용자 발견: ${user.email}`,
         );
-        // 사용자 객체를 그대로 반환 (로그인 처리)
         return done(null, user);
       }
 
-      // 3. 신규 사용자인 경우
       this.logger.log(
-        `[Google Validate] New user detected. Preparing social profile.`,
+        `[Google Validate] 새로운 사용자 감지: ${profile._json.email}`,
       );
-      // DB에 저장하지 않고, 소셜 프로필 정보만 추출
       const socialProfile = {
         email: profile._json.email,
         socialId: profile.id,
@@ -74,20 +61,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         profileImage: profile._json.picture || '',
         registerType: registerType,
       };
-      this.logger.log(
-        `[Google Validate] Social profile created: ${JSON.stringify(socialProfile)}`,
-      );
-      // 사용자 객체 대신 false와 함께 프로필 정보를 info 객체로 전달
-      this.logger.log(
-        `[Google Validate] Returning false (new user) with social profile info.`,
-      );
       return done(null, false, { profile: socialProfile });
     } catch (error) {
       this.logger.error(
-        `[Google Validate] Error during validation: ${error.message}`,
+        `[Google Validate] 에러 발생 시 에러 메시지: ${error.message}`,
         error.stack,
       );
-      // 에러 발생 시
       return done(error);
     }
   }

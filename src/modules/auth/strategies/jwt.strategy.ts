@@ -17,12 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
-          console.log(
-            '[JwtStrategy Extractor] Request Cookies:',
-            request.cookies,
-          );
           const token = request?.cookies?.Authentication;
-          console.log('[JwtStrategy Extractor] Token from Cookie:', token);
           return token;
         },
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -33,39 +28,37 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<any> {
-    this.logger.log(
-      `[JwtValidate] Start validation. Payload: ${JSON.stringify(payload)}`,
-    );
-    const { sub, isTemporary } = payload;
+    this.logger.log(`[JwtValidate] 토큰 유효성 검사 시작: ${payload?.sub}`);
+    const { profile, isTemporary, sub } = payload;
 
-    if (isTemporary) {
-      this.logger.log('[JwtValidate] Detected temporary token.');
-      if (!sub) {
-        this.logger.error('[JwtValidate] Temporary token missing sub (email).');
-        throw new UnauthorizedException('Invalid temporary token payload');
+    if (isTemporary && profile) {
+      if (!profile.email) {
+        this.logger.error(
+          '[JwtValidate] 임시 토큰 프로필 이메일 누락.',
+        );
+        throw new UnauthorizedException(
+          '임시 토큰 프로필 페이로드 유효하지 않음',
+        );
       }
-      const result = { email: sub };
-      this.logger.log(
-        `[JwtValidate] Returning for temporary token: ${JSON.stringify(result)}`,
-      );
+      const result = profile;
       return result;
-    } else {
-      this.logger.log('[JwtValidate] Detected final token.');
+    } else if (!isTemporary && sub) {
       if (!sub) {
-        this.logger.error('[JwtValidate] Final token missing sub (email).');
-        throw new UnauthorizedException('Invalid token payload');
+        this.logger.error('[JwtValidate] 최종 토큰 이메일 누락.');
+        throw new UnauthorizedException('유효하지 않은 토큰 페이로드');
       }
-      this.logger.log(`[JwtValidate] Finding user by email: ${sub}`);
       const user = await this.usersService.findUserByEmail(sub);
       if (!user) {
-        this.logger.warn(`[JwtValidate] User not found for email: ${sub}`);
-        throw new UnauthorizedException('User not found for this token');
+        this.logger.warn(`[JwtValidate] 이메일로 사용자 찾기 실패: ${sub}`);
+        throw new UnauthorizedException('이 토큰에 해당하는 사용자 찾기 실패');
       }
       const { password, ...rest } = user;
-      this.logger.log(
-        `[JwtValidate] Returning user data for final token: ${JSON.stringify(rest)}`,
-      );
       return rest;
+    } else {
+      this.logger.error(
+        `[JwtValidate] 유효하지 않은 페이로드 구조: ${JSON.stringify(payload)}`,
+      );
+      throw new UnauthorizedException('유효하지 않은 토큰 페이로드 구조');
     }
   }
 }
