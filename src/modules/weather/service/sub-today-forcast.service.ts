@@ -242,13 +242,13 @@ export class SubTodayForecastService {
             throw error;
         }
     }
-    @Cron('40 5 * * *')  // 매일 05시 40분에 실행 실패시
+    @Cron('15 5 * * *')  // 매일 05시 15분에 실행 실패시
     async failCollect(){
         const result = await this.subCollectAllRegionsWeatherOnlyMissing()
     }
 
 
-    @Cron('30 5 * * *')  // 매일 05시 30분에 실행
+    @Cron('10 5 * * *')  // 매일 05시 10분에 실행
     async subCollectAllRegionsWeatherOnlyMissing() {
         try {
             const existingRegionIds = await this.todayForecastRepository
