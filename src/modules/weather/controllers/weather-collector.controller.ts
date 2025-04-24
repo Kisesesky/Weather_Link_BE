@@ -4,6 +4,7 @@ import { WeatherResponseDto } from "../dto/weather-response.dto";
 import { DailyForecastService } from "../service/daily-forecast.service";
 import { MidForecastService } from "../service/mid-forecast.service";
 import { MidTempService } from "../service/mid-temp.service";
+import { SubDailyForecastService } from "../service/sub-daily-forecast.service";
 import { SubTodayForecastService } from "../service/sub-today-forcast.service";
 import { TodayForecastService } from "../service/today-forcast.service";
 import { WeatherAirService } from "../service/weather-air.service";
@@ -19,6 +20,7 @@ export class WeatherCollectiorController {
     private readonly midTempService: MidTempService,
     private readonly todayForecastService: TodayForecastService,
     private readonly subTodayForecastService: SubTodayForecastService,
+    private readonly subDailyForecastService: SubDailyForecastService,
   ) {}
 
   //현재시각기준 미세먼지 데이터수집
@@ -94,6 +96,25 @@ export class WeatherCollectiorController {
   async collectAllRegionsWeather(): Promise<WeatherResponseDto<any>> {
     try {
       const data = await this.dailyForecastService.collectAllRegionsWeather();
+      return WeatherResponseUtil.success(data, '현재 날씨 정보 수집 성공');
+    } catch (error) {
+      return WeatherResponseUtil.error(
+        'API_ERROR',
+        '현재 날씨 정보 수집 실패'
+      );
+    }
+  }
+
+  @ApiOperation({ summary: '현재 날씨 정보 수집' })
+  @ApiResponse({
+    status: 200,
+    description: '현재 날씨 정보',
+    type: WeatherResponseDto
+  })
+  @Post('sub-daily-data')
+  async subCollectAllRegionsWeather(): Promise<WeatherResponseDto<any>> {
+    try {
+      const data = await this.subDailyForecastService.subCollectAllRegionsWeather();
       return WeatherResponseUtil.success(data, '현재 날씨 정보 수집 성공');
     } catch (error) {
       return WeatherResponseUtil.error(

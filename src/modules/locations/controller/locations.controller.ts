@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import * as path from 'path';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LocationsService } from '../service/locations.service';
@@ -8,6 +8,17 @@ import { ResponseDto } from 'src/common/dto/response.dto';
 @Controller('locations')
 export class LocationController {
   constructor(private readonly locationsService: LocationsService) {}
+
+    @ApiOperation({ summary: 'LocationId로 시도/구군 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '시도(sido)와 구군(gugun) 정보 반환',
+    type: ResponseDto
+  })
+  @Get(':id')
+  async getLocationById(@Param('id') id: string) {
+    return this.locationsService.findByIdLocation(id);
+}
 
   //서버 시작시 자동으로 업로드 안될시 수동방법
   @ApiOperation({ summary: 'csv데이터 수동 업로드' })

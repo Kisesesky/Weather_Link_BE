@@ -70,8 +70,8 @@ export class SubTodayForecastService {
     }
 
     private async getSubForecastByRegion(nx: number, ny: number): Promise<ForecastTimeSlot[]> {
-        const serviceUrl = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
-        const authKey = 'oYIwHqmwxdjby411eO7nV638l51i5U0HWbthm0OfSKKNdDDx%2FjuAx7lKefQFPjWBMHdXCR9RyZpeOgFea7KpXQ%3D%3D';
+        const serviceUrl = this.weatherConfigService.subDailyForecastApiUrl as string;
+        const authKey = this.weatherConfigService.subDailyForecastApiKey as string;
         const baseDate = moment().format('YYYYMMDD');
         const baseTime = '0500';
 

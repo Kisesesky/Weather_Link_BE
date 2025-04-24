@@ -21,6 +21,7 @@ import { TodayForecastEntity } from './entities/today-forecast.entity';
 import { WeatherCollectiorController } from './controllers/weather-collector.controller';
 import { WeatherResponseController } from './controllers/weather-response.controller';
 import { SubTodayForecastService } from './service/sub-today-forcast.service';
+import { SubDailyForecastService } from './service/sub-daily-forecast.service';
 
 @Module({
   imports: [
@@ -51,9 +52,10 @@ import { SubTodayForecastService } from './service/sub-today-forcast.service';
     DailyForecastService,
     TodayForecastService,
     SubTodayForecastService,
+    SubDailyForecastService,
     WeatherCollectiorController,
     WeatherResponseController,
   ],
-  exports: [WeatherAirService, TodayForecastService, SubTodayForecastService],
+  exports: [WeatherAirService, TodayForecastService, SubTodayForecastService, SubDailyForecastService],
 })
 export class WeatherModule {}

@@ -52,4 +52,12 @@ export class WeatherConfigService {
   get subDailyForecastApiUrl() {
     return this.configService.get<string>('weather.subDailyForecastApiUrl');
   }
+
+  get subDayForecastApiKey() {
+    return this.configService.get<string>('weather.subDayForecastApiKey');
+  }
+
+  get subDayForecastApiUrl() {
+    return this.configService.get<string>('weather.subDayForecastApiUrl');
+  }
 }
