@@ -26,6 +26,7 @@ async function bootstrap() {
   // CORS 설정
   app.enableCors({
     origin: [
+      'https://weather-link.site',
       'http://localhost:3000', // 개발용 프론트 주소
       'http://localhost:5173', // FRONTEND_URL 값에 맞춰 추가/수정
       'https://your-frontend.com', // 배포용 프론트 주소
