@@ -1,29 +1,28 @@
-name: Build and Push Docker image
+# 무중단배포 미사용시 주석해제
+# name: Build and Push Docker image
 
-on:
-  push:
-    # branches: [ main ]   # main 브랜치에 push될 때 실행
-    branches: [ dev ]   # dev 브랜치에 push될 때 실행
+# on:
+#   push:
+#     # branches: [ main ]   # main 브랜치에 push될 때 실행
+#     branches: [ dev ]   # dev 브랜치에 push될 때 실행
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# jobs:
+#   build-push:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       - name: Login to DockerHub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}     # github Repository Actions에 등록해놔야함
+#           password: ${{ secrets.DOCKERHUB_PASSWORD }}     # github Repository Actions에 등록해놔야함
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}     # github Repository Actions에 등록해놔야함
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}     # github Repository Actions에 등록해놔야함
+#       - name: Build Docker image
+#         run: docker build -t hoyaa/weather_link:latest .  # Docker-hub ID/Repository:tag
 
-      - name: Build Docker image
-        run: docker build -t hoyaa/weather_link:latest .  # Docker-hub ID/Repository:tag
-
-      - name: Push Docker image
-        run: docker push hoyaa/weather_link:latest        # Docker-hub ID/Repository:tag
+#       - name: Push Docker image
+#         run: docker push hoyaa/weather_link:latest        # Docker-hub ID/Repository:tag
