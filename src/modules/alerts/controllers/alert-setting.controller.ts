@@ -21,6 +21,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { ToggleAllAlertsDto } from '../dto/toggle-all-alerts.dto';
+import { ParseUUIDPipe } from '@nestjs/common';
 
 @ApiTags('알림 설정')
 @ApiBearerAuth()
@@ -46,11 +47,18 @@ export class AlertSettingController {
     @Body() dto: CreateAlertSettingDto,
   ): Promise<ResponseDto> {
     try {
-      const data = await this.alertsService.create(user, dto);
+      const newSetting = await this.alertsService.create(user, dto);
+      const responseData = {
+        id: newSetting.id,
+        type: newSetting.type,
+        threshold: newSetting.threshold,
+        unit: newSetting.unit,
+        active: newSetting.active,
+      };
       return new ResponseDto({
         success: true,
         message: '알림 설정이 성공적으로 생성되었습니다.',
-        data,
+        data: responseData,
       });
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -87,6 +95,36 @@ export class AlertSettingController {
     });
   }
 
+  @Patch('toggle-all')
+  @ApiOperation({
+    summary: '모든 알림 설정 활성화/비활성화',
+    description: '사용자의 모든 알림 설정을 한 번에 켜거나 끕니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '모든 알림 설정의 활성화 상태가 성공적으로 변경되었습니다.',
+  })
+  @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
+  async toggleAllAlerts(
+    @RequestUser() user: User,
+    @Body() toggleAllAlertsDto: ToggleAllAlertsDto,
+  ): Promise<ResponseDto> {
+    try {
+      await this.alertsService.toggleAll(user.id, toggleAllAlertsDto.active);
+      return new ResponseDto({
+        success: true,
+        message: '모든 알림 설정 상태가 변경되었습니다.',
+      });
+    } catch (error) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '모든 알림 설정 변경 중 오류가 발생했습니다.',
+        error: error.message || 'Bad Request',
+      });
+    }
+  }
+
   @Patch(':id')
   @ApiOperation({
     summary: '알림 설정 수정',
@@ -100,7 +138,7 @@ export class AlertSettingController {
   @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
   @ApiResponse({ status: 404, description: '알림 설정을 찾을 수 없습니다.' })
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAlertSettingDto,
   ): Promise<ResponseDto> {
     try {
@@ -154,27 +192,5 @@ export class AlertSettingController {
       }
       throw error;
     }
-  }
-
-  @Patch('toggle-all')
-  @ApiOperation({
-    summary: '모든 알림 설정 활성화/비활성화',
-    description: '사용자의 모든 알림 설정을 한 번에 켜거나 끕니다.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: '모든 알림 설정의 활성화 상태가 성공적으로 변경되었습니다.',
-  })
-  @ApiResponse({ status: 400, description: '잘못된 요청입니다.' })
-  @ApiResponse({ status: 401, description: '인증되지 않은 요청입니다.' })
-  async toggleAllAlerts(
-    @RequestUser() user: User,
-    @Body() toggleAllAlertsDto: ToggleAllAlertsDto,
-  ): Promise<ResponseDto> {
-    await this.alertsService.toggleAll(user.id, toggleAllAlertsDto.active);
-    return new ResponseDto({
-      success: true,
-      message: '모든 알림 설정 상태가 변경되었습니다.',
-    });
   }
 }
