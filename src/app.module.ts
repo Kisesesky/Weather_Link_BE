@@ -24,7 +24,7 @@ import { DbConfigService } from './config/db/config.service';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot(AppDataSource.options),
-    ScheduleModule.forRoot(), //api호출 테스트 아닐시에는 주석처리부탁드립니다.
+    // ScheduleModule.forRoot(), //api호출 테스트 아닐시에는 주석처리부탁드립니다.
     UsersModule,
     AuthModule,
     LoginLogsModule,

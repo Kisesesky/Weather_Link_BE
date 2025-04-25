@@ -141,7 +141,7 @@ export const SIDO_NAME_MAP: Record<string, string> = {
   {
     regId: '11G00401', // 서귀포
     regions: [
-      { sido: '제주', guguns: ['서귀포시'] }
+      { sido: '제주', guguns: ['서귀포시', '이어도'] }
     ]
   },
 
@@ -200,7 +200,7 @@ export const SIDO_NAME_MAP: Record<string, string> = {
       regId: '11C10000',
       regions: [
         { sido: '충북' }, { sido: '세종' }
-      ]
+      ] 
     },
     // 충청남도, 대전
     {
@@ -247,7 +247,7 @@ export const SIDO_NAME_MAP: Record<string, string> = {
     {
       regId: '11G00000',
       regions: [
-        { sido: '제주' }
+        { sido: '제주' }, { sido: '이어도' }
       ]
     },
     // 경상북도, 대구
