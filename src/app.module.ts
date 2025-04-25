@@ -17,6 +17,7 @@ import { InitService } from './init/init.service';
 import { LocationsService } from './modules/locations/service/locations.service';
 import { RegionService } from './modules/locations/service/region.service';
 import { DbConfigService } from './config/db/config.service';
+import { ChatGateway } from './modules/chat/chat.gateway';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { DbConfigService } from './config/db/config.service';
     LocationsService,
     RegionService,
     DbConfigService,
+    ChatGateway,
   ],
 })
 export class AppModule {
