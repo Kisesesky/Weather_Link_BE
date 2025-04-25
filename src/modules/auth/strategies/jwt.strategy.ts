@@ -32,9 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (isTemporary && profile) {
       if (!profile.email) {
-        this.logger.error(
-          '[JwtValidate] 임시 토큰 프로필 이메일 누락.',
-        );
+        this.logger.error('[JwtValidate] 임시 토큰 프로필 이메일 누락.');
         throw new UnauthorizedException(
           '임시 토큰 프로필 페이로드 유효하지 않음',
         );
