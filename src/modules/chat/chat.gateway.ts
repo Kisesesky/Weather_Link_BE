@@ -13,7 +13,7 @@ import { CreateMessageDto } from './dto/create-chat.dto';
 import { ChatRoomsService } from './service/chatRoom.service';
 import * as jwt from 'jsonwebtoken';
 
-@WebSocketGateway({ cors: true, namespace: '/chat' })
+@WebSocketGateway({ cors: true, namespace: '/chat', transports: ['websocket'], })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
