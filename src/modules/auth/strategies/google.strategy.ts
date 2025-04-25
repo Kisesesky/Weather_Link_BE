@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { SocialConfigService } from 'src/config/social/config.service';
@@ -7,16 +7,20 @@ import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  private readonly logger = new Logger(GoogleStrategy.name);
+
   constructor(
     private socialConfigService: SocialConfigService,
     private usersService: UsersService,
   ) {
-    super({
+    const strategyOptions = {
       clientID: socialConfigService.googleClientId as string,
       clientSecret: socialConfigService.googleClientSecret as string,
       callbackURL: socialConfigService.googleCallbackUrl as string,
       scope: ['email', 'profile'],
-    });
+    };
+
+    super(strategyOptions);
   }
 
   async validate(
@@ -24,30 +28,33 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     refreshToken: string,
     profile: Profile,
     done: VerifyCallback,
-  ) {
-    const user = await this.usersService.findUserBySocialId(
-      profile.id,
-      RegisterType.GOOGLE,
-    );
+  ): Promise<any> {
+    const registerType = RegisterType.GOOGLE;
+    try {
+      const user = await this.usersService.findUserBySocialId(
+        profile.id,
+        registerType,
+      );
 
-    if (user) {
-      done(null, user);
-      return;
+      if (user) {
+        return done(null, user);
+      }
+
+      const socialProfile = {
+        email: profile._json.email,
+        socialId: profile.id,
+        name:
+          profile.displayName || profile._json.email?.split('@')[0] || '사용자',
+        profileImage: profile._json.picture || '',
+        registerType: registerType,
+      };
+      return done(null, false, { profile: socialProfile });
+    } catch (error) {
+      this.logger.error(
+        `[Google Validate] 에러 발생 시 에러 메시지: ${error.message}`,
+        error.stack,
+      );
+      return done(error);
     }
-
-    // 구글 프로필 구조
-    const newUser = await this.usersService.createUser({
-      email: profile._json.email,
-      socialId: profile.id,
-      name: profile.displayName || profile._json.email.split('@')[0],
-      registerType: RegisterType.GOOGLE,
-      profileImage: profile._json.picture || '',
-      termsAgreed: false,
-      locationAgreed: false,
-      sido: '서울특별시',
-      gugun: '강남구',
-    });
-
-    done(null, newUser);
   }
 }

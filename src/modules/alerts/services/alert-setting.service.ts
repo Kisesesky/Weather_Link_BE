@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { AlertSetting } from '../entities/alert_setting.entity';
 import { CreateAlertSettingDto } from '../dto/create-alert-setting.dto';
 import { UpdateAlertSettingDto } from '../dto/update-alert-setting.dto';
@@ -154,5 +154,16 @@ export class AlertSettingService {
     });
     if (!setting) throw new NotFoundException('설정이 존재하지 않습니다.');
     await this.alertSettingRepository.remove(setting);
+  }
+
+  // 모든 알림 설정 활성화/비활성화
+  async toggleAll(userId: string, active: boolean): Promise<UpdateResult> {
+    // userId에 해당하는 모든 AlertSetting 레코드의 active 필드를 업데이트
+    const result = await this.alertSettingRepository.update(
+      { user: { id: userId } }, // 조건: 특정 사용자의 설정
+      { active: active }, // 변경할 내용: active 상태 업데이트
+    );
+
+    return result;
   }
 }

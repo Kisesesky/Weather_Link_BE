@@ -1,17 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import * as basicAuth from 'express-basic-auth';
 import { DbConfigService } from 'src/config/db/config.service';
+import * as cookieParser from 'cookie-parser';
+import { Request, Response, NextFunction, json } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(DbConfigService);
+  const logger = new Logger('Bootstrap');
+
+  app.use(cookieParser());
+  app.use(json());
 
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true, // 요청 데이터를 DTO 타입으로 변환
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 
@@ -19,6 +27,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000', // 개발용 프론트 주소
+      'http://localhost:5173', // FRONTEND_URL 값에 맞춰 추가/수정
       'https://your-frontend.com', // 배포용 프론트 주소
     ],
     credentials: true,

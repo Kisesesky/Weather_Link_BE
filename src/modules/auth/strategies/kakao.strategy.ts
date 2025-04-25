@@ -1,13 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-kakao';
 import { SocialConfigService } from 'src/config/social/config.service';
 import { RegisterType } from 'src/modules/users/entities/user.entity';
 import { UsersService } from 'src/modules/users/users.service';
-import { LocationsEntity } from 'src/modules/locations/entities/location.entity';
 
 @Injectable()
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
+  private readonly logger = new Logger(KakaoStrategy.name);
+
   constructor(
     private socialConfigService: SocialConfigService,
     private usersService: UsersService,
@@ -20,33 +21,56 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
-    const user = await this.usersService.findUserBySocialId(
-      profile.id,
-      RegisterType.KAKAO,
-    );
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: Function,
+  ) {
+    const registerType = RegisterType.KAKAO;
 
-    if (user) {
-      return user;
+    try {
+      const user = await this.usersService.findUserBySocialId(
+        profile.id,
+        registerType,
+      );
+
+      if (user) {
+        return done(null, user);
+      }
+
+      const email = profile._json.kakao_account?.email;
+      if (!email) {
+        this.logger.error('[Kakao Validate] 카카오 프로필에 이메일 없음.');
+        return done(
+          new UnauthorizedException(
+            '카카오 계정에서 이메일 정보를 가져올 수 없습니다.',
+          ),
+        );
+      }
+
+      const socialProfile = {
+        email: email,
+        socialId: profile.id.toString(),
+        name:
+          profile.displayName ||
+          profile._json.kakao_account?.profile?.nickname ||
+          profile._json.properties?.nickname ||
+          email.split('@')[0] ||
+          '사용자',
+        profileImage:
+          profile._json.kakao_account?.profile?.profile_image_url ||
+          profile._json.properties?.profile_image ||
+          '',
+        registerType: registerType,
+      };
+      return done(null, false, { profile: socialProfile });
+    } catch (error) {
+      this.logger.error(
+        `[Kakao Validate] 유효성 검사 중 오류 발생: ${profile.id}: ${error.message}`,
+        error.stack,
+      );
+      return done(error);
     }
-
-    // 카카오 프로필 구조
-    const newUser = await this.usersService.createUser({
-      email: profile._json.kakao_account?.email || profile._json.account_email,
-      socialId: profile._json.id.toString(),
-      name:
-        profile._json.kakao_account?.profile?.nickname ||
-        profile._json.properties?.nickname,
-      registerType: RegisterType.KAKAO,
-      profileImage:
-        profile._json.kakao_account?.profile?.profile_image_url ||
-        profile._json.profile_image,
-      termsAgreed: false,
-      locationAgreed: false,
-      sido: '서울특별시',
-      gugun: '강남구',
-    });
-
-    return newUser;
   }
 }

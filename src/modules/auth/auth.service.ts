@@ -17,9 +17,13 @@ import { validatePassword } from 'src/utils/password-validator';
 import { LoginLogsService } from '../login-logs/login-logs.service';
 import { LocationsService } from '../locations/service/locations.service';
 import { SocialSignupDto } from './dto/social-sign-up.dto';
+import { RegisterType } from '../users/entities/user.entity';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -74,6 +78,10 @@ export class AuthService {
 
   async logAndMakeToken(email: string, origin: string) {
     const user = await this.usersService.findUserByEmail(email);
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+    // 이미 가입된 사용자의 로그인 로그 기록 및 마지막 로그인 시간 업데이트
     const loginLog = await this.loginLogsService.create(user.id);
     await this.usersService.updateLastLogin(user.id, loginLog.login_time);
 
@@ -140,7 +148,7 @@ export class AuthService {
     const maxAge = 3600 * 1000;
     const accessToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
     return {
       accessToken,
@@ -153,7 +161,7 @@ export class AuthService {
     const maxAge = 30 * 24 * 3600 * 1000;
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
     return {
       refreshToken,
@@ -265,46 +273,6 @@ export class AuthService {
     return '비밀번호가 성공적으로 변경되었습니다.';
   }
 
-  async SocialSignup(userId: string, socialSignupDto: SocialSignupDto) {
-    // 약관 동의 검증
-    if (!socialSignupDto.termsAgreed || !socialSignupDto.locationAgreed) {
-      throw new BadRequestException('약관 동의가 필요합니다.');
-    }
-
-    // 위치 정보 찾기 (findBySidoGugun 사용)
-    console.log('위치 정보 조회:', {
-      sido: socialSignupDto.sido,
-      gugun: socialSignupDto.gugun,
-    });
-
-    const location = await this.locationsService.findBySidoGugun(
-      socialSignupDto.sido,
-      socialSignupDto.gugun,
-    );
-
-    if (!location) {
-      throw new BadRequestException('존재하지 않는 위치 정보입니다.');
-    }
-
-    // 사용자 정보 업데이트
-    const updatedUser = await this.usersService.completeSocialSignup(
-      userId,
-      socialSignupDto,
-      location,
-    );
-
-    // 약관 동의와 위치 설정이 완료된 사용자인지 확인
-    if (
-      !updatedUser.termsAgreed ||
-      !updatedUser.locationAgreed ||
-      !updatedUser.location
-    ) {
-      throw new BadRequestException('약관 동의와 위치 설정이 필요합니다.');
-    }
-
-    return updatedUser;
-  }
-
   // 임시 토큰 생성 메서드 (소셜 로그인 콜백에서 사용)
   createTemporaryToken(email: string, origin: string) {
     const payload = { sub: email, isTemporary: true };
@@ -312,12 +280,78 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
-      expiresIn: maxAge,
+      expiresIn: maxAge / 1000,
     });
 
     return {
       accessToken,
       accessOptions: this.setCookieOption(maxAge, origin),
     };
+  }
+
+  // 임시 토큰 생성 (신규 사용자용)
+  createSocialTemporaryToken(profile: any, origin: string) {
+    // profile 객체에는 email, socialId, name, profileImage, registerType 포함됨
+    const payload = { profile, isTemporary: true }; // 임시 토큰임을 명시
+    const maxAge = 30 * 60 * 1000; // 30분 유효
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.appConfigService.jwtSecret,
+      expiresIn: maxAge / 1000,
+    });
+
+    return {
+      accessToken,
+      accessOptions: this.setCookieOption(maxAge, origin), // 쿠키 옵션 설정
+    };
+  }
+
+  // 추가 정보 입력 완료 후 최종 회원가입 처리
+  async completeNewSocialUserSignup(
+    tempTokenPayload: any, // 임시 토큰에서 추출한 페이로드
+    socialSignupDto: SocialSignupDto,
+    origin: string, // 쿠키 설정을 위해 필요
+  ) {
+    this.logger.log(
+      `[completeNewSocialUserSignup] 시작: ${tempTokenPayload?.email}`,
+    );
+
+    // 1. 약관 동의 검증
+    if (
+      socialSignupDto.termsAgreed !== true ||
+      socialSignupDto.locationAgreed !== true
+    ) {
+      this.logger.warn(
+        `[completeNewSocialUserSignup] 약관 미동의: ${tempTokenPayload?.email}`,
+      ); // 약관 미동의 경고 유지
+      throw new BadRequestException('모든 필수 약관에 동의해야 합니다.');
+    }
+
+    // 2. 위치 찾기
+    const location = await this.locationsService.findBySidoGugun(
+      socialSignupDto.sido,
+      socialSignupDto.gugun,
+    );
+    if (!location) {
+      this.logger.warn(
+        `[completeNewSocialUserSignup] 위치 없음: ${socialSignupDto.sido}, ${socialSignupDto.gugun}`,
+      ); // 위치 없음 경고 유지
+      throw new BadRequestException('유효하지 않은 위치 정보입니다.');
+    }
+
+    // 3. 소셜 사용자 생성
+    // 토큰에서 프로필 정보와 DTO에서 추가 정보 전달
+    const newUser = await this.usersService.createSocialUser(tempTokenPayload, {
+      termsAgreed: socialSignupDto.termsAgreed,
+      locationAgreed: socialSignupDto.locationAgreed,
+      location: location,
+    });
+
+    // 4. 신규 사용자 로그인 로그 기록
+    const loginLog = await this.loginLogsService.create(newUser.id);
+    await this.usersService.updateLastLogin(newUser.id, loginLog.login_time);
+
+    // 5. 최종 JWT 토큰 발행
+    return this.makeJwtToken(newUser.email, origin);
   }
 }

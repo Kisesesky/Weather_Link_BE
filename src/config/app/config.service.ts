@@ -17,4 +17,12 @@ export class AppConfigService {
   get port() {
     return this.configService.get<number>('app.port');
   }
+
+  get jwtExpiresIn(): string {
+    return this.configService.get<string>('app.jwtExpiresIn') || '30d';
+  }
+
+  get frontendUrl(): string {
+    return this.configService.get<string>('app.frontendUrl') || '';
+  }
 }

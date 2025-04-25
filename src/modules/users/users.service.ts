@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RegisterType, User, Theme } from './entities/user.entity';
@@ -21,6 +22,8 @@ import { LocationsEntity } from '../locations/entities/location.entity';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -232,6 +235,21 @@ export class UsersService {
       .where('LOWER(user.name) LIKE LOWER(:name)', { name: `%${name}%` });
   }
 
+  // 소셜 가입 시 프로필 이미지 업로드한 경우 사용
+  async updateUserProfileImage(
+    userId: string,
+    profileImageUrl: string,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found.`);
+    }
+
+    user.profileImage = profileImageUrl;
+    await this.usersRepository.save(user);
+  }
+
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
@@ -432,52 +450,84 @@ export class UsersService {
     return location;
   }
 
-  async completeSocialSignup(
-    userId: string,
-    completeSocialSignupDto: SocialSignupDto,
-    location: LocationsEntity,
-  ) {
-    const user = await this.usersRepository.findOne({
-      where: { id: userId },
+  async createSocialUser(
+    profile: {
+      email: string;
+      name: string;
+      socialId: string;
+      profileImage: string;
+      registerType: RegisterType;
+    },
+    additionalInfo: {
+      termsAgreed: boolean;
+      locationAgreed: boolean;
+      location: LocationsEntity;
+    },
+  ): Promise<User> {
+    this.logger.log(
+      `[createSocialUser] 소셜 사용자 생성 시도: ${profile.email}`,
+    );
+
+    // 1. Email duplication check
+    const existingUser = await this.usersRepository.findOne({
+      where: { email: profile.email },
+    });
+    if (existingUser) {
+      this.logger.warn(`[createSocialUser] 이메일 이미 존재: ${profile.email}`);
+      // Policy: Throw error for existing email during social signup completion
+      throw new BadRequestException('이미 사용 중인 이메일입니다.');
+    }
+
+    // 2. Create User entity with social info
+    const newUser = this.usersRepository.create({
+      email: profile.email,
+      name: profile.name, // Use name from social profile
+      socialId: profile.socialId,
+      profileImage: profile.profileImage, // Use profile image from social profile
+      registerType: profile.registerType,
+      termsAgreed: additionalInfo.termsAgreed,
+      locationAgreed: additionalInfo.locationAgreed,
+      location: additionalInfo.location,
+      // Password is not set for social users
     });
 
-    if (!user) {
-      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
-    }
+    // 3. Save the new user
+    const savedUser = await this.usersRepository.save(newUser);
+    this.logger.log(`[createSocialUser] 신규 사용자 저장: ${savedUser.id}`); // 이 로그는 유지
 
-    // 프로필 이미지 업데이트
-    if (completeSocialSignupDto.profileImage) {
-      user.profileImage = completeSocialSignupDto.profileImage;
-    }
-
-    // 약관 동의 및 위치 정보 업데이트
-    user.termsAgreed = completeSocialSignupDto.termsAgreed;
-    user.locationAgreed = completeSocialSignupDto.locationAgreed;
-    user.location = location;
-
-    const updatedUser = await this.usersRepository.save(user);
-
-    // 새로운 위치의 채팅방에 사용자 참여
-    try {
-      // 채팅방이 없으면 생성
-      let chatRoom;
+    // 4. Add user to chat room (handle potential errors)
+    if (savedUser.location?.sido) {
       try {
-        chatRoom = await this.chatRoomsService.findOne(location.sido);
-      } catch (error) {
-        if (error instanceof NotFoundException) {
-          chatRoom = await this.chatRoomsService.createChatRoom(location.sido);
+        let chatRoom = await this.chatRoomsService
+          .findOne(savedUser.location.sido)
+          .catch((e) => {
+            if (e instanceof NotFoundException) return null; // Handle case where findOne throws NotFoundException
+            throw e; // Rethrow other errors
+          });
+        if (!chatRoom) {
+          this.logger.log(
+            `[createSocialUser] 채팅방 찾기 실패: ${savedUser.location.sido}, 새로 생성.`,
+          );
+          chatRoom = await this.chatRoomsService.createChatRoom(
+            savedUser.location.sido,
+          );
         }
+        this.logger.log(
+          `[createSocialUser] 사용자 ${savedUser.id}를 채팅방 ${savedUser.location.sido}에 추가.`,
+        );
+        await this.addUserToNewChatRoom(savedUser.id, savedUser.location.sido);
+      } catch (error) {
+        this.logger.error(
+          `[createSocialUser] 채팅방 추가 중 오류 발생: ${error.message}`,
+          error.stack,
+        );
       }
-
-      // 사용자를 채팅방에 참여시킴
-      if (chatRoom) {
-        await this.addUserToNewChatRoom(updatedUser.id, location.sido);
-      }
-    } catch (error) {
-      console.log(`새로운 채팅방 참여 중 오류 발생: ${error.message}`);
+    } else {
+      this.logger.warn(
+        `[createSocialUser] 사용자 ${savedUser.id}에 위치 SIDO가 없음, 채팅방 추가 건너뜀.`,
+      );
     }
 
-    const { password, ...rest } = updatedUser;
-    return rest;
+    return savedUser;
   }
 }
