@@ -24,7 +24,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t hoyaa/weather_link:latest -f team01-back/Dockerfile.
+          docker build -t hoyaa/weather_link:latest -f team01-back/Dockerfile team01-back
           docker push hoyaa/weather_link:latest
   deploy:
     needs: build-push  # build-push 작업 완료 후 실행
