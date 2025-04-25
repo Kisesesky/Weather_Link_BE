@@ -1,5 +1,5 @@
 import { Controller, Get, NotFoundException, Query } from "@nestjs/common";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiTags } from "@nestjs/swagger";
 import { ApiGugunQuery, ApiSidoQuery } from "src/docs/swagger/weather/weather-query-decorator.swagger";
 import { ApiWeatherResponse } from "src/docs/swagger/weather/weather-response-decorator.swagger";
 import { todayForecast, todayWeather, weeklyForecast, weeklyTemp } from "src/docs/swagger/weather/weather.swagger";
