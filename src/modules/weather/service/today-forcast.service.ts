@@ -6,7 +6,6 @@ import { WeatherConfigService } from "src/config/weather/config.service";
 import { Raw, Repository } from "typeorm";
 import { PrecipitationType, SkyCondition } from "../utils/weather-conditions";
 import { TodayForecastEntity } from '../entities/today-forecast.entity';
-import { Cron } from "@nestjs/schedule";
 import { ForecastTimeSlot } from "../interface/weather-interface";
 import { firstValueFrom } from "rxjs";
 import { RegionEntity } from "src/modules/locations/entities/region.entity";

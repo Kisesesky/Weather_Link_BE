@@ -12,7 +12,6 @@ export class MidTempController {
     constructor(
         private readonly midTempService: MidTempService,
         private readonly midForecastService: MidForecastService,
-
     ) {}
 
   @ApiOperation({ summary: '지역별 주간 예보 조회' })
