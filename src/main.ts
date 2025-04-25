@@ -5,7 +5,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import * as basicAuth from 'express-basic-auth';
 import { DbConfigService } from 'src/config/db/config.service';
 import * as cookieParser from 'cookie-parser';
-import { Request, Response, NextFunction, json } from 'express';
+import { json } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

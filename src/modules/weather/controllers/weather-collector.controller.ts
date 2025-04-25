@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Post, Query } from "@nestjs/common";
+import { Controller, Delete, Post, Query } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { WeatherResponseDto } from "../dto/weather-response.dto";
 import { DailyForecastService } from "../service/daily-forecast.service";

@@ -10,6 +10,7 @@ import { LocationsEntity } from 'src/modules/locations/entities/location.entity'
 import { RegionEntity } from 'src/modules/locations/entities/region.entity';
 import { Cron } from '@nestjs/schedule';
 import * as dayjs from 'dayjs';
+import pLimit from 'p-limit';
 
 @Injectable()
 export class SubDailyForecastService {
@@ -116,12 +117,7 @@ export class SubDailyForecastService {
           this.logger.error('오래된 일기 예보 데이터 삭제 중 오류 발생:', error);
       }
   }
-  @Cron('0 */1 * * *') // 메인 실패할수있어 미리 가져오기
-  async subCollect() {
-    const result = this.subCollectAllRegionsWeather()
-  }
   
-  // 모든 지역의 날씨 데이터 수집 및 저장
   @Cron('10 */1 * * *') // 매 1시간마다 10분에 실행
   async subCollectAllRegionsWeather() {
     try {
@@ -136,14 +132,16 @@ export class SubDailyForecastService {
         return [];
       }
 
-      // 현재 시간의 시 단위 기준으로 중복 여부 판단
       const now = new Date();
       const hourStart = new Date(now);
       hourStart.setMinutes(0, 0, 0);
       const hourEnd = new Date(now);
       hourEnd.setMinutes(59, 59, 999);
 
-      const weatherPromises = regions.map(async (region) => {
+      const limit = pLimit(5);
+      const failedRegions: typeof regions = [];
+
+      const processRegion = async (region) => {
         try {
           const existing = await this.dailyForecastRepository.findOne({
             where: {
@@ -179,17 +177,26 @@ export class SubDailyForecastService {
 
           await this.dailyForecastRepository.save(weatherEntity);
           this.logger.log(`날씨 데이터 저장 완료 - 지역: ${region.name}`);
-
           return weatherEntity;
         } catch (error) {
-          this.logger.error(
-            `지역 ${region.name}의 날씨 데이터 수집 실패: ${error.message}`,
-          );
+          this.logger.error(`지역 ${region.name}의 날씨 수집 실패: ${error.message}`);
+          failedRegions.push(region);
           return null;
         }
-      });
+      };
 
-      const results = await Promise.all(weatherPromises);
+      const weatherPromises = regions.map((region) => limit(() => processRegion(region)));
+      let results = await Promise.all(weatherPromises);
+
+      if (failedRegions.length > 0) {
+        this.logger.warn(`재시도 대상 지역 ${failedRegions.length}개`);
+        const retryPromises = failedRegions.map((region) =>
+          limit(() => processRegion(region)),
+        );
+        const retryResults = await Promise.all(retryPromises);
+        results = [...results, ...retryResults];
+      }
+
       const successCount = results.filter((r) => r !== null).length;
       this.logger.log(
         `전체 ${regions.length}개 지역 중 ${successCount}개 지역의 날씨 데이터 수집 완료`,
@@ -201,6 +208,7 @@ export class SubDailyForecastService {
       throw error;
     }
   }
+
 
   // 특정 지역(시/군/구/동)의 날씨 데이터 수집
   async collectLocationWeather(sido: string, gugun?: string, dong?: string) {

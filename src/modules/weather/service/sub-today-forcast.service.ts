@@ -247,7 +247,6 @@ export class SubTodayForecastService {
         const result = await this.subCollectAllRegionsWeatherOnlyMissing()
     }
 
-
     @Cron('10 5 * * *')  // 매일 05시 10분에 실행
     async subCollectAllRegionsWeatherOnlyMissing() {
         try {
