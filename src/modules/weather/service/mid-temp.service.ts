@@ -143,6 +143,9 @@ export class MidTempService {
     }
 
     private getRegId(sido: string, gugun: string): string | undefined {
+        if(sido === '세종특별자치시') {
+            return this.locationsService.findRegIdTemp('세종특별자치시','세종')
+        }
         // 시도와 구군에서 상세 주소(ex: 분당구)를 제외하고 regId 찾기
         const mainGugun = gugun?.split(/[\s,]+/)[0]; // 첫 번째 구군만 사용 (예: "성남시분당구" -> "성남시")
         this.logger.debug(`Looking up regId for sido: ${sido}, mainGugun: ${mainGugun}`);
