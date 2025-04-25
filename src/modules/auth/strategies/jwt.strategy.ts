@@ -28,14 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<any> {
-    this.logger.log(`[JwtValidate] 토큰 유효성 검사 시작: ${payload?.sub}`);
     const { profile, isTemporary, sub } = payload;
 
     if (isTemporary && profile) {
       if (!profile.email) {
-        this.logger.error(
-          '[JwtValidate] 임시 토큰 프로필 이메일 누락.',
-        );
+        this.logger.error('[JwtValidate] 임시 토큰 프로필 이메일 누락.');
         throw new UnauthorizedException(
           '임시 토큰 프로필 페이로드 유효하지 않음',
         );

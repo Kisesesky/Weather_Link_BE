@@ -24,6 +24,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { RemoveFriendDto } from './dto/remove-friend.dto';
 import { SearchFriendsDto } from './dto/search-friends.dto';
+import { SearchUsersQueryDto } from './dto/search-users-query.dto';
 
 @ApiTags('친구 관리')
 @ApiBearerAuth()
@@ -42,11 +43,8 @@ export class FriendsController {
     description: '유저 검색 성공',
     type: ResponseDto,
   })
-  async search(
-    @Query('name') name: string,
-    @Query() paginationDto: PaginationDto,
-  ): Promise<ResponseDto> {
-    const data = await this.friendsService.searchUsers(name, paginationDto);
+  async search(@Query() query: SearchUsersQueryDto): Promise<ResponseDto> {
+    const data = await this.friendsService.searchUsers(query.name, query);
     return new ResponseDto({
       success: true,
       message: '유저 검색 성공',
