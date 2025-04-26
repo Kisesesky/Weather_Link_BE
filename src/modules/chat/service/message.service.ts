@@ -26,6 +26,7 @@ export class MessagesService {
     const sender = await this.usersService.findUserById(
       createMessageDto.userId,
     );
+    console.log('sender', sender)
 
     if (!room || !sender) {
       throw new NotFoundException('채팅방 또는 사용자를 찾을 수 없습니다.');
@@ -35,6 +36,7 @@ export class MessagesService {
     const isParticipant = room.participants.some(
       (participant) => participant.id === sender.id,
     );
+    console.log('isParticipant', isParticipant)
 
     if (!isParticipant) {
       throw new UnauthorizedException('해당 채팅방에 참여되어 있지 않습니다.');
