@@ -118,7 +118,6 @@ export class DailyForecastService {
   }
 
   // 모든 지역의 날씨 데이터 수집 및 저장
-  // @Cron('10 */1 * * *') //1시간 10분 간격 자동수집
   async collectAllRegionsWeather() {
     try {
       // 모든 region 데이터 조회 (nx, ny가 있는 것만)

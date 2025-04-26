@@ -98,7 +98,7 @@ export class SubDailyForecastService {
     return `${String(hour).padStart(2, '0')}00`;
   }
 
-  @Cron('0 0 0 * * *') // 매일 자정에 실행
+  @Cron('40 0 0 * * *') // 매일 자정에 실행
   async deleteOldForecasts() {
       try {
           const sevenDaysAgo = dayjs().subtract(7, 'day').format('YYYYMMDD');
