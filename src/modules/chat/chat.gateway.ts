@@ -23,8 +23,9 @@ import * as jwt from 'jsonwebtoken';
     credentials: true,
   },
   namespace: '/chat',
-  transports: ['websocket'],
+  transports: ['websocket','polling'],
 })
+
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;

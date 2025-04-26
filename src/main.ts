@@ -6,6 +6,7 @@ import * as basicAuth from 'express-basic-auth';
 import { DbConfigService } from 'src/config/db/config.service';
 import * as cookieParser from 'cookie-parser';
 import { json } from 'express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -68,7 +69,7 @@ async function bootstrap() {
     './src/docs/swagger/swagger-spec.json',
     JSON.stringify(document),
   );
-
+  app.useWebSocketAdapter(new IoAdapter(app))
   await app.listen(process.env.PORT ?? 3000,'0.0.0.0');
   
 }
