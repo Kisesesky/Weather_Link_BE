@@ -23,10 +23,19 @@ export class MessagesService {
     const room = await this.chatRoomsService.findRoomById(
       createMessageDto.roomId,
     );
+
+    console.log('[ROOM_FOUND]', {
+      roomId: room?.id,
+      participantsCount: room?.participants?.length
+    });
+
     const sender = await this.usersService.findUserById(
       createMessageDto.userId,
     );
-    console.log('sender', sender)
+    console.log('[SENDER_FOUND]', {
+      senderId: sender?.id,
+      senderName: sender?.name
+    });
 
     if (!room || !sender) {
       throw new NotFoundException('채팅방 또는 사용자를 찾을 수 없습니다.');
