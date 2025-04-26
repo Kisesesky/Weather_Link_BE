@@ -57,17 +57,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 클라이언트 메시지 전송
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() createMessageDto: CreateMessageDto,
+    @MessageBody() rawData: any,
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      console.log('[MESSAGE_ATTEMPT]', {
-        dto: createMessageDto,
-        clientId: client.id
-      });
+      let messageData: CreateMessageDto;
+      if (typeof rawData === 'string') {
+        try {
+          messageData = JSON.parse(rawData);
+        } catch (e) {
+          throw new Error(`Invalid message format: ${e.message}`);
+        }
+      } else {
+        messageData = rawData;
+      }
+  
+      console.log('[PARSED_MESSAGE_DATA]', messageData);
+  
+      // 데이터 유효성 검사
+      if (!messageData.content) {
+        throw new Error('Message content is required');
+      }
+  
       // 1. 메시지 DB에 저장
       const savedMessage =
-        await this.messagesService.saveMessage(createMessageDto);
+        await this.messagesService.saveMessage(messageData);
       console.log('[MESSAGE_SAVED]', savedMessage)
       // 2. 응답 데이터 간소화
       const simplifiedMessage = {
@@ -83,14 +97,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 3. 같은 roomId를 가진 사용자들에게 메시지 전송
       this.server
-        .to(createMessageDto.roomId)
+        .to(messageData.roomId)
         .emit('newMessage', simplifiedMessage);
-      console.log(`[SEND] Broadcasting to room: ${createMessageDto.roomId}`);
+      console.log(`[SEND] Broadcasting to room: ${messageData.roomId}`);
     } catch (error) {
       console.error('[MESSAGE_ERROR]', {
         error: error.message,
         stack: error.stack,
-        dto: createMessageDto
+        originalData: rawData
       });
       client.emit('error', {
         message: '메시지 전송에 실패했습니다.',
