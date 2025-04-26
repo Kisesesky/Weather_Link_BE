@@ -13,15 +13,19 @@ import { CreateMessageDto } from './dto/create-chat.dto';
 import { ChatRoomsService } from './service/chatRoom.service';
 import * as jwt from 'jsonwebtoken';
 
-@WebSocketGateway({ cors: {
-  origin: '*',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
-  credentials: true,
+@WebSocketGateway({ 
+  cors: {
+    origin: [
+      'https://weather-link.site',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
+    credentials: true,
   },
   namespace: '/chat',
-  transports: ['websocket', 'polling'],
+  transports: ['websocket','polling'],
 })
+
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
