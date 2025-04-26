@@ -61,14 +61,28 @@ export class ChatRoomsService {
 
   // 특정 채팅방의 전체 정보 조회
   async findRoomById(roomId: string) {
-    const room = await this.chatRoomsRepository
-      .createQueryBuilder('chatRoom')
-      .leftJoinAndSelect('chatRoom.participants', 'participant')
-      .where('chatRoom.id = :roomId', { roomId })
-      .getOne();
+    const room = await this.chatRoomsRepository.findOne({
+      where: { id: roomId },
+      relations: ['participants', 'location'],
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        participants: {
+          id: true,
+          name: true
+        }
+      }
+    });
   
-    console.log('Room:', room);
-    console.log('Participants:', room?.participants);
+    console.log('[QUERY_RESULT]', {
+      found: !!room,
+      roomData: room ? {
+        id: room.id,
+        name: room.name,
+        participantCount: room.participants?.length
+      } : null
+    });
   
     return room;
   }
