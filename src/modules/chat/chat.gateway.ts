@@ -61,10 +61,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
+      console.log('[MESSAGE_ATTEMPT]', {
+        dto: createMessageDto,
+        clientId: client.id
+      });
       // 1. 메시지 DB에 저장
       const savedMessage =
         await this.messagesService.saveMessage(createMessageDto);
-
+      console.log('[MESSAGE_SAVED]', savedMessage)
       // 2. 응답 데이터 간소화
       const simplifiedMessage = {
         id: savedMessage.id,
@@ -83,8 +87,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('newMessage', simplifiedMessage);
       console.log(`[SEND] Broadcasting to room: ${createMessageDto.roomId}`);
     } catch (error) {
-      console.error('Error sending message:', error);
-      client.emit('error', '메시지 전송에 실패했습니다.');
+      console.error('[MESSAGE_ERROR]', {
+        error: error.message,
+        stack: error.stack,
+        dto: createMessageDto
+      });
+      client.emit('error', {
+        message: '메시지 전송에 실패했습니다.',
+        details: error.message
+      });
     }
   }
 }
