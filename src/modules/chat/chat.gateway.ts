@@ -13,7 +13,7 @@ import { CreateMessageDto } from './dto/create-chat.dto';
 import { ChatRoomsService } from './service/chatRoom.service';
 import * as jwt from 'jsonwebtoken';
 
-@WebSocketGateway({ 
+@WebSocketGateway({
   cors: {
     origin: [
       'https://weather-link.site',
