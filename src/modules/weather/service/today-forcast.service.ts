@@ -114,7 +114,6 @@ export class TodayForecastService {
         }
     }
 
-    // @Cron('0 5 * * *')  // 매일 05시에 실행
     async collectAllRegionsWeather() {
         try {
             const regions = await this.regionRepository

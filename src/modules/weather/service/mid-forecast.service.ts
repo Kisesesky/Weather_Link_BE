@@ -23,7 +23,7 @@ export class MidForecastService {
     private readonly weatherConfigService: WeatherConfigService
   ) {}
   
-  @Cron('0 0 0 * * *') // 매일 자정에 실행
+  @Cron('30 0 0 * * *') // 매일 자정에 실행
   async deleteOldForecasts() {
     try {
       const today = dayjs().format('YYYYMMDD');
@@ -48,12 +48,8 @@ export class MidForecastService {
     return this.deleteOldForecasts();
   }
   
-  @Cron('10 */12 * * *') // sub용 12시에 수집 못할경우
-  async subMidForecasts() {
-    const result = await this.fetchAndSaveMidForecasts()
-  }
 
-  @Cron('0 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
+  @Cron('20 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
   async fetchAndSaveMidForecasts(regionCode?: string): Promise<void> {
     const servicekey = this.weatherConfigService.midForecastApiKey as string;
     const serviceUrl = this.weatherConfigService.midForecastApiUrl as string;

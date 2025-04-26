@@ -23,7 +23,7 @@ export class SubTodayForecastService {
         private httpService: HttpService,
     ) {}
 
-    @Cron('0 */6 * * *') //6시간마다 데이터 삭제
+    @Cron('16 */6 * * *') //6시간마다 데이터 삭제
     async cleanUpForecast() {
         const now = new Date();
         await this.todayForecastRepository.delete({
@@ -143,8 +143,8 @@ export class SubTodayForecastService {
             throw new Error('날씨 정보를 가져오는데 실패했습니다.');
         }
     }
-
-    @Cron('0 5 * * *')  // 매일 05시에 실행
+    
+    @Cron('44 5 * * *')  // 매일 05시 10분에 실행
     async subCollectAllRegionsWeather() {
         try {
             const regions = await this.regionRepository
@@ -242,12 +242,7 @@ export class SubTodayForecastService {
             throw error;
         }
     }
-    @Cron('15 5 * * *')  // 매일 05시 15분에 실행 실패시
-    async failCollect(){
-        const result = await this.subCollectAllRegionsWeatherOnlyMissing()
-    }
 
-    @Cron('10 5 * * *')  // 매일 05시 10분에 실행
     async subCollectAllRegionsWeatherOnlyMissing() {
         try {
             const existingRegionIds = await this.todayForecastRepository

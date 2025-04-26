@@ -22,6 +22,7 @@ import { WeatherCollectiorController } from './controllers/weather-collector.con
 import { WeatherResponseController } from './controllers/weather-response.controller';
 import { SubTodayForecastService } from './service/sub-today-forcast.service';
 import { SubDailyForecastService } from './service/sub-daily-forecast.service';
+import { SubTodayCollectService } from './service/sub-today-collect.service';
 
 @Module({
   imports: [
@@ -53,9 +54,10 @@ import { SubDailyForecastService } from './service/sub-daily-forecast.service';
     TodayForecastService,
     SubTodayForecastService,
     SubDailyForecastService,
+    SubTodayCollectService,
     WeatherCollectiorController,
     WeatherResponseController,
   ],
-  exports: [WeatherAirService, TodayForecastService, SubTodayForecastService, SubDailyForecastService],
+  exports: [WeatherAirService, TodayForecastService, SubTodayForecastService, SubDailyForecastService, SubTodayCollectService],
 })
 export class WeatherModule {}
