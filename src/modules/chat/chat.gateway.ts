@@ -30,12 +30,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  private connectedUsers: Map<string, string> = new Map(); 
+
   constructor(
     private messagesService: MessagesService,
     private chatRoomsService: ChatRoomsService,
   ) {}
-  
-  private connectedUsers: Map<string, string> = new Map(); 
 
   async handleConnection(client: Socket) {
     const userId = client.handshake.query.userId as string;
@@ -45,20 +45,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   
     // 이미 연결된 유저라면 기존 소켓 연결을 끊고 새로 연결
-    if (this.connectedUsers.has(userId)) {
-      const oldSocketId = this.connectedUsers.get(userId);
-      
-      if (oldSocketId?.trim()) { 
-        const oldSocket = this.server.sockets.sockets.get(oldSocketId);
-        if (oldSocket) {
-          oldSocket.disconnect(true);
-          console.log(`[DUPLICATE] Disconnected previous socket for user: ${userId}`);
-        }
+    const oldSocketId = this.connectedUsers.get(userId);
+    if (oldSocketId && oldSocketId !== client.id) {
+      const oldSocket = this.server.sockets.sockets.get(oldSocketId);
+      oldSocket?.disconnect(true);
+      console.log(`[DUPLICATE] Disconnected previous socket for user: ${userId}`);
       }
-    }
-  
-    this.connectedUsers.set(userId, client.id);
-    console.log(`[CONNECTED] User ${userId} connected with socket ${client.id}`);
+      this.connectedUsers.set(userId, client.id);
+      console.log(`[CONNECTED] User ${userId} connected with socket ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {

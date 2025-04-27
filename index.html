@@ -61,10 +61,12 @@
 
   <script>
     // --- Socket.IO 연결 ---
-    const socket = io('https://weather-link.site/chat', {
-      withCredentials: true,
-      transports: ['websocket'],
-    });
+    const socket = io('http://weather-link.site/chat', {
+        query: { userId: getUserId() }, // ✅ 핸드셰이크 쿼리 추가
+        withCredentials: true,
+        transports: ['websocket'],
+        });
+
 
     // --- 상태 변수 ---
     let roomId = '';
@@ -148,9 +150,8 @@
       socket.emit('sendMessage', {
         roomId,
         content,
-        userId: userId, // senderId → userId로 맞춰줌!
-        });
-
+        userId: userId,
+      });
 
       document.getElementById('messageInput').value = '';
     }
