@@ -58,6 +58,13 @@ import { SubTodayCollectService } from './service/sub-today-collect.service';
     WeatherCollectiorController,
     WeatherResponseController,
   ],
-  exports: [WeatherAirService, TodayForecastService, SubTodayForecastService, SubDailyForecastService, SubTodayCollectService],
+  exports: [
+    DailyForecastService,
+    WeatherAirService,
+    TodayForecastService,
+    SubTodayForecastService,
+    SubDailyForecastService,
+    SubTodayCollectService,
+  ],
 })
 export class WeatherModule {}
