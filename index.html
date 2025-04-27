@@ -8,32 +8,79 @@
     body {
       font-family: sans-serif;
       padding: 20px;
+      background-color: #f4f4f4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     #messages {
       margin-top: 20px;
+      flex-grow: 1;
+      overflow-y: auto;
+      max-height: 80%;
+      display: flex;
+      flex-direction: column; /* 메시지가 밑으로 쌓이도록 설정 */
     }
     .message {
       margin-bottom: 10px;
-      padding: 10px;
-      border-radius: 10px;
+      padding: 15px;
+      border-radius: 20px;
       max-width: 60%;
       word-wrap: break-word;
+      display: block; /* 메시지가 세로로 쌓이도록 수정 */
+      font-size: 14px;
     }
     .my-message {
-      background-color: yellow;
+      background-color: #b8d0e7;
       text-align: right;
       margin-left: auto;
+      border-radius: 20px 20px 0 20px;
     }
     .other-message {
-      background-color: lightgray;
+      background-color: #ece5dd;
       text-align: left;
       margin-right: auto;
+      border-radius: 20px 20px 20px 0;
     }
     .message p {
       margin: 0;
     }
+    .message-time {
+      font-size: 12px;
+      color: gray;
+      margin-top: 5px;
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .profile-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
     #chat-controls {
       margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    input {
+      width: 80%;
+      padding: 10px;
+      margin-right: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #34b7f1;
+      color: white;
+      border: none;
+      border-radius: 20px;
     }
   </style>
 </head>
@@ -61,19 +108,17 @@
 
   <script>
     // --- Socket.IO 연결 ---
-    const socket = io('http://weather-link.site/chat', {
-        query: { userId: getUserId() }, // ✅ 핸드셰이크 쿼리 추가
-        withCredentials: true,
-        transports: ['websocket'],
-        });
-
+    const socket = io('wss://weather-link.site/chat', {
+      query: { userId: getUserId() }, // ✅ 핸드셰이크 쿼리 추가
+      withCredentials: true,
+      transports: ['websocket'],
+    });
 
     // --- 상태 변수 ---
     let roomId = '';
 
     // --- 유틸 함수 ---
     function getUserId() {
-      // 항상 최신 userId를 sessionStorage에서 읽어옴
       return sessionStorage.getItem('userId') || '';
     }
 
@@ -88,12 +133,31 @@
       msg.classList.add('message');
 
       const currentUserId = getUserId();
+      const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // 시간 포맷
+
+      // 메시지 보낸 사람의 프로필 이미지
+      const profileImage = message.sender.profileImage || 'default-profile-img.jpg'; // 기본 이미지 사용
+
       if (message.sender.id === currentUserId) {
         msg.classList.add('my-message');
-        msg.innerHTML = `<p><strong>You:</strong> ${message.content}</p>`;
+        msg.innerHTML = `
+          <div class="message-header">
+            <img class="profile-img" src="${profileImage}" alt="Profile Image">
+            <span class="sender-name">You</span>
+          </div>
+          <p><strong>You:</strong> ${message.content}</p>
+          <div class="message-time">${currentTime}</div>
+        `;
       } else {
         msg.classList.add('other-message');
-        msg.innerHTML = `<p><strong>${message.sender.name}:</strong> ${message.content}</p>`;
+        msg.innerHTML = `
+          <div class="message-header">
+            <img class="profile-img" src="${profileImage}" alt="Profile Image">
+            <span class="sender-name">${message.sender.name}</span>
+          </div>
+          <p><strong>${message.sender.name}:</strong> ${message.content}</p>
+          <div class="message-time">${currentTime}</div>
+        `;
       }
 
       messagesDiv.appendChild(msg);
@@ -112,8 +176,6 @@
 
     socket.on('newMessage', (message) => {
       console.log('[New Message received]', message);
-      console.log('Sender ID:', message.sender.id);
-      console.log('User ID:', getUserId());
       appendMessage(message);
     });
 

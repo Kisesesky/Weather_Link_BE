@@ -22,9 +22,12 @@ export const AppDataSource = new DataSource({
   username: dbConfigService.dbUser,
   password: dbConfigService.dbPassword,
   database: dbConfigService.dbName,
-
   synchronize: false, // 마이그레이션 시 false 고정
   entities: [entity],
   migrations: [migration],
   subscribers: [subscriber],
+  extra: {
+    // 세션 타임존을 Asia/Seoul 로 설정
+    options: '-c timezone=Asia/Seoul'
+  },
 });
