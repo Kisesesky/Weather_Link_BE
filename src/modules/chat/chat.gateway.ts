@@ -34,23 +34,42 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private messagesService: MessagesService,
     private chatRoomsService: ChatRoomsService,
   ) {}
-  //포스트맨에 2번 접속되는게 확인되여 혹시모를 중복접속 방지
-  private connectedClients: Set<string> = new Set();
+  
+  private connectedUsers: Map<string, string> = new Map(); 
 
   async handleConnection(client: Socket) {
-    if (this.connectedClients.has(client.id)) {
-      console.log(`[DUPLICATE] Client already connected: ${client.id}`);
+    const userId = client.handshake.query.userId as string;
+    if (!userId) {
       client.disconnect();
       return;
     }
   
-    this.connectedClients.add(client.id);
-    console.log(`[CONNECTED] Client connected: ${client.id}`);
+    // 이미 연결된 유저라면 기존 소켓 연결을 끊고 새로 연결
+    if (this.connectedUsers.has(userId)) {
+      const oldSocketId = this.connectedUsers.get(userId);
+      
+      if (oldSocketId?.trim()) { 
+        const oldSocket = this.server.sockets.sockets.get(oldSocketId);
+        if (oldSocket) {
+          oldSocket.disconnect(true);
+          console.log(`[DUPLICATE] Disconnected previous socket for user: ${userId}`);
+        }
+      }
+    }
+  
+    this.connectedUsers.set(userId, client.id);
+    console.log(`[CONNECTED] User ${userId} connected with socket ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    this.connectedClients.delete(client.id);
-    console.log(`[DISCONNECTED] Client disconnected: ${client.id}`);
+    // userId를 찾아서 Map에서 제거
+    for (const [userId, socketId] of this.connectedUsers.entries()) {
+      if (socketId === client.id) {
+        this.connectedUsers.delete(userId);
+        console.log(`[DISCONNECTED] User ${userId} disconnected`);
+        break;
+      }
+    }
   }
 
   // 클라이언트 방 입장

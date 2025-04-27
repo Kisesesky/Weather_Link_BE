@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Socket.IO Chat Test</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #messages {
+      margin-top: 20px;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 60%;
+      word-wrap: break-word;
+    }
+    .my-message {
+      background-color: yellow;
+      text-align: right;
+      margin-left: auto;
+    }
+    .other-message {
+      background-color: lightgray;
+      text-align: left;
+      margin-right: auto;
+    }
+    .message p {
+      margin: 0;
+    }
+    #chat-controls {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chat Room Test</h1>
+
+  <div>
+    <label>Room ID:</label>
+    <input type="text" id="roomId" placeholder="Enter Room ID">
+    <button id="joinBtn">Join Room</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <label>User ID:</label>
+    <input type="text" id="userIdInput" placeholder="Enter your user ID">
+  </div>
+
+  <div id="chat-controls" style="margin-top: 10px;">
+    <label>Message:</label>
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <button id="sendBtn">Send Message</button>
+  </div>
+
+  <div id="messages"></div>
+
+  <script>
+    // --- Socket.IO 연결 ---
+    const socket = io('https://weather-link.site/chat', {
+      withCredentials: true,
+      transports: ['websocket'],
+    });
+
+    // --- 상태 변수 ---
+    let roomId = '';
+
+    // --- 유틸 함수 ---
+    function getUserId() {
+      // 항상 최신 userId를 sessionStorage에서 읽어옴
+      return sessionStorage.getItem('userId') || '';
+    }
+
+    function setUserId(id) {
+      sessionStorage.setItem('userId', id);
+    }
+
+    // --- 메시지 DOM 추가 함수 ---
+    function appendMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const msg = document.createElement('div');
+      msg.classList.add('message');
+
+      const currentUserId = getUserId();
+      if (message.sender.id === currentUserId) {
+        msg.classList.add('my-message');
+        msg.innerHTML = `<p><strong>You:</strong> ${message.content}</p>`;
+      } else {
+        msg.classList.add('other-message');
+        msg.innerHTML = `<p><strong>${message.sender.name}:</strong> ${message.content}</p>`;
+      }
+
+      messagesDiv.appendChild(msg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight; // 스크롤 자동 내리기
+    }
+
+    // --- 소켓 이벤트 핸들러 ---
+    socket.on('connect', () => {
+      console.log('[Socket Connected]', socket.id);
+    });
+
+    socket.on('joinedRoom', (roomId) => {
+      console.log(`[Joined Room] ${roomId}`);
+      document.getElementById('messages').innerHTML = ''; // 방 입장 시 메시지 초기화
+    });
+
+    socket.on('newMessage', (message) => {
+      console.log('[New Message received]', message);
+      console.log('Sender ID:', message.sender.id);
+      console.log('User ID:', getUserId());
+      appendMessage(message);
+    });
+
+    // --- 방 입장 함수 ---
+    function joinRoom() {
+      const inputRoomId = document.getElementById('roomId').value.trim();
+      const inputUserId = document.getElementById('userIdInput').value.trim();
+
+      if (!inputRoomId || !inputUserId) {
+        alert('Room ID와 User ID를 입력해주세요.');
+        return;
+      }
+
+      roomId = inputRoomId;
+      setUserId(inputUserId);
+
+      socket.emit('joinRoom', { roomId });
+    }
+
+    // --- 메시지 전송 함수 ---
+    function sendMessage() {
+      const content = document.getElementById('messageInput').value.trim();
+      const userId = getUserId();
+
+      if (!roomId || !userId) {
+        alert('Room ID와 User ID를 입력하고 방에 먼저 참여하세요.');
+        return;
+      }
+      if (!content) {
+        alert('메시지를 입력하세요.');
+        return;
+      }
+
+      socket.emit('sendMessage', {
+        roomId,
+        content,
+        userId: userId, // senderId → userId로 맞춰줌!
+        });
+
+
+      document.getElementById('messageInput').value = '';
+    }
+
+    // --- 이벤트 리스너 등록 ---
+    document.getElementById('joinBtn').addEventListener('click', joinRoom);
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+    // 엔터키로 메시지 전송
+    document.getElementById('messageInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // 엔터키로 방 입장
+    document.getElementById('userIdInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') joinRoom();
+    });
+
+    // 새로고침 시 이전 userId 자동 입력
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUserId = getUserId();
+      if (savedUserId) {
+        document.getElementById('userIdInput').value = savedUserId;
+      }
+    });
+  </script>
+</body>
+</html>
