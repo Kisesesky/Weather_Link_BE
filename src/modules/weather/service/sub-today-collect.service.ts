@@ -124,10 +124,17 @@ export class SubTodayCollectService {
                             });
     
                             if (existing) {
-                                this.logger.log(
-                                    `중복 데이터 감지 - ${region.name} ${forecastDateTime.toISOString()}`
-                                );
-                                continue; // 중복 데이터는 건너뜁니다
+                                existing.temperature = forecast.temperature;
+                                existing.skyCondition = forecast.skyCondition;
+                                existing.rainProbability = forecast.rainProbability;
+                                existing.precipitationType = forecast.precipitationType;
+                                existing.humidity = forecast.humidity;
+                                existing.snowfall = forecast.snowfall;
+                                existing.collectedAt = new Date(); // 수집 시간 최신화
+
+                                this.logger.log(`중복 데이터 갱신 - ${region.name} ${forecastDateTime.toISOString()}`);
+                                await this.todayForecastRepository.save(existing);  // 업데이트
+                                continue;  // 중복된 데이터는 건너뜀
                             }
     
                             // 중복이 아니면 새로운 데이터를 저장할 리스트에 추가
