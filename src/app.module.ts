@@ -42,7 +42,6 @@ import { ChatGateway } from './modules/chat/chat.gateway';
     LocationsService,
     RegionService,
     DbConfigService,
-    ChatGateway,
   ],
 })
 export class AppModule {
