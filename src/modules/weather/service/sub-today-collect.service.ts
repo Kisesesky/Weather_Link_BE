@@ -204,6 +204,7 @@ export class SubTodayCollectService {
             };
     
             this.logger.log(`Completed collecting weather data: ${JSON.stringify(result)}`);
+            await this.removeDuplicateWeatherData
             return result;
     
         } catch (error) {
@@ -211,4 +212,25 @@ export class SubTodayCollectService {
             throw error;
         }
     }
+
+    private async removeDuplicateWeatherData(forecastdatetime: Date, regionid: string): Promise<void> {
+        // 1. 중복 데이터 조회 (forecastdatetime과 regionid 기준)
+        const duplicateData = await this.todayForecastRepository
+          .createQueryBuilder('weatherData')
+          .where('weatherData.forecastdatetime = :forecastdatetime', { forecastdatetime })
+          .andWhere('weatherData.regionid = :regionid', { regionid })
+          .getMany();
+    
+        if (duplicateData.length > 1) {
+          // 2. 중복 데이터에서 createdAt이 가장 최근이 아닌 항목 삭제
+          const sortedData = duplicateData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // 내림차순 정렬
+          const dataToDelete = sortedData.slice(1); // 가장 최근 데이터를 제외한 나머지 데이터
+    
+          // 3. 삭제 실행
+          for (const data of dataToDelete) {
+            await this.todayForecastRepository.remove(data);
+          }
+        }
+      }
+    
 }
