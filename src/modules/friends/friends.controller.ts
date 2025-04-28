@@ -34,23 +34,22 @@ export class FriendsController {
   constructor(private readonly friendsService: FriendsService) {}
 
   @Get('search')
-  @ApiOperation({ summary: '유저 검색' })
+  @ApiOperation({ summary: '유저 검색 (친구 상태 포함)' })
   @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
   @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
   @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
   @ApiResponse({
     status: 200,
-    description: '유저 검색 성공',
-    type: ResponseDto,
+    description: '유저 검색 성공. 각 유저 정보에 친구 상태(status) 포함됨.',
   })
   async search(
     @Query() query: SearchUsersQueryDto,
     @Req() req,
   ): Promise<ResponseDto> {
     const data = await this.friendsService.searchUsers(
+      req.user.id,
       query.name,
       query,
-      req.user.id,
     );
     return new ResponseDto({
       success: true,
