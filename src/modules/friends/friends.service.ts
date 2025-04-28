@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { Repository } from 'typeorm';
@@ -11,55 +12,93 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from 'src/utils/pagination.util';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { User } from '../users/entities/user.entity';
-import { ILike } from 'typeorm';
+import { ILike, In } from 'typeorm';
 import { UserBasicInfoDto } from 'src/modules/users/dto/user-basic-info.dto';
+import { TodayForecastService } from '../weather/service/today-forcast.service';
 
 @Injectable()
 export class FriendsService {
+  private readonly logger = new Logger(FriendsService.name);
+
   constructor(
     @InjectRepository(Friend)
     private friendRepository: Repository<Friend>,
     private usersService: UsersService,
+    private todayForecastService: TodayForecastService,
   ) {}
 
-  // 유저 검색
+  // 유저 검색 (친구 상태 포함)
   async searchUsers(
+    requestingUserId: string,
     name: string,
     paginationDto: PaginationDto,
-    currentUserId: string,
   ) {
     const query = this.usersService.findUserByName(name);
     query.leftJoinAndSelect('user.location', 'location');
-    // 로그인한 유저 자신 제외
-    query.andWhere('user.id != :currentUserId', { currentUserId });
+    query.andWhere('user.id != :requestingUserId', { requestingUserId });
 
-    // 친구 또는 친구 요청 중인 목록 조회
-    const relations = await this.friendRepository.find({
-      where: [
-        { sender: { id: currentUserId } },
-        { receiver: { id: currentUserId } },
-      ],
-    });
-
-    const relatedUserIds = new Set<string>();
-    relations.forEach((rel) => {
-      if (rel.sender?.id === currentUserId && rel.receiver?.id) {
-        relatedUserIds.add(rel.receiver.id);
-      } else if (rel.receiver?.id === currentUserId && rel.sender?.id) {
-        relatedUserIds.add(rel.sender.id);
-      }
-    });
-
-    // 검색 결과에서 제외
     const paginatedResult = await paginate(User, paginationDto, query);
-    const filtered = paginatedResult.data.filter(
-      (user) => !relatedUserIds.has(user.id),
-    );
-    const mappedData = filtered.map((user) => UserBasicInfoDto.fromUser(user));
+
+    const searchedUsers = paginatedResult.data;
+    const searchedUserIds = searchedUsers.map((user) => user.id);
+
+    // 관계 정보를 저장할 Map (Key: 상대방 ID, Value: { status: string, senderId: string })
+    const relationMap = new Map<string, { status: string; senderId: string }>();
+
+    if (searchedUserIds.length > 0) {
+      const relations = await this.friendRepository.find({
+        where: [
+          {
+            sender: { id: requestingUserId },
+            receiver: { id: In(searchedUserIds) },
+          },
+          {
+            sender: { id: In(searchedUserIds) },
+            receiver: { id: requestingUserId },
+          },
+        ],
+        relations: ['sender', 'receiver'], // senderId 비교를 위해 관계 로드
+      });
+
+      relations.forEach((rel) => {
+        const otherUserId =
+          rel.sender.id === requestingUserId ? rel.receiver.id : rel.sender.id;
+        // accepted 상태를 우선 적용
+        if (!relationMap.has(otherUserId) || rel.status === 'accepted') {
+          relationMap.set(otherUserId, {
+            status: rel.status,
+            senderId: rel.sender.id,
+          });
+        }
+      });
+    }
+
+    // 결과를 { user: UserBasicInfoDto, status: string } 형태로 매핑
+    const mappedData = searchedUsers.map((user) => {
+      const basicInfo = UserBasicInfoDto.fromUser(user);
+      let relationshipStatus: string;
+
+      const relation = relationMap.get(user.id);
+      if (relation) {
+        if (relation.status === 'accepted') {
+          relationshipStatus = 'FRIENDS';
+        } else if (relation.status === 'pending') {
+          relationshipStatus =
+            relation.senderId === requestingUserId
+              ? 'REQUEST_SENT'
+              : 'REQUEST_RECEIVED';
+        } else {
+          relationshipStatus = 'NOT_FRIENDS';
+        }
+      } else {
+        relationshipStatus = 'NOT_FRIENDS';
+      }
+      return { user: basicInfo, status: relationshipStatus };
+    });
 
     return {
-      data: mappedData,
-      total: filtered.length,
+      items: mappedData,
+      total: paginatedResult.total,
       take: paginationDto.take,
       skip: paginationDto.skip,
     };
@@ -191,40 +230,71 @@ export class FriendsService {
     return mappedRequests;
   }
 
-  // 친구로 등록된 전체 목록 조회
+  // 친구로 등록된 전체 목록 조회 (DB 기반 날씨 정보 포함)
   async getFriendsList(userId: string, paginationDto: PaginationDto) {
     const whereCondition = [
-      {
-        sender: { id: userId },
-        status: 'accepted' as const,
-      },
-      {
-        receiver: { id: userId },
-        status: 'accepted' as const,
-      },
+      { sender: { id: userId }, status: 'accepted' as const },
+      { receiver: { id: userId }, status: 'accepted' as const },
     ];
 
     const [friends, total] = await this.friendRepository.findAndCount({
       where: whereCondition,
-      // sender와 receiver의 location 정보도 함께 로드
       relations: ['sender', 'receiver', 'sender.location', 'receiver.location'],
       skip: paginationDto.skip,
       take: paginationDto.take,
     });
 
-    // 조회된 Friend 관계 목록에서 친구 User 객체만 추출
     const friendUsers = friends.map((friend) =>
       friend.sender.id === userId ? friend.receiver : friend.sender,
     );
 
-    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
-    const mappedFriendsData = friendUsers.map((user) =>
-      UserBasicInfoDto.fromUser(user),
+    // 각 친구의 DB 날씨 정보 조회 및 매핑
+    const mappedFriendsData = await Promise.all(
+      friendUsers.map(async (user) => {
+        const basicInfo = UserBasicInfoDto.fromUser(user);
+        let weatherInfo: {
+          temperature: number | null;
+          sky: string | null;
+        } | null = null;
+
+        if (user.location && user.location.sido && user.location.gugun) {
+          try {
+            // DB에서 날씨 정보 조회하는 서비스 메서드 호출
+            const forecastEntity =
+              await this.todayForecastService.getForecastDataByRegionName(
+                user.location.sido,
+                user.location.gugun,
+              );
+
+            // forecastEntity가 존재하면 정보 추출
+            if (forecastEntity) {
+              weatherInfo = {
+                temperature: forecastEntity.temperature ?? null,
+                sky: forecastEntity.skyCondition ?? null, // DB에 저장된 skyCondition 값 사용
+              };
+            }
+          } catch (error) {
+            // NotFoundException 등 DB 조회 실패 시 경고 로그 남기고 weatherInfo는 null 유지
+            if (error instanceof NotFoundException) {
+              this.logger.warn(
+                `친구(${user.id}) 지역 DB 날씨 정보 없음: ${user.location.sido} ${user.location.gugun}`,
+              );
+            } else {
+              this.logger.error(
+                `친구(${user.id}) DB 날씨 조회 오류: ${error.message}`,
+              );
+            }
+          }
+        } else {
+          this.logger.debug(`친구(${user.id}) 위치 정보 없음.`);
+        }
+
+        return { user: basicInfo, weather: weatherInfo };
+      }),
     );
 
-    // 최종 결과 객체 반환
     return {
-      data: mappedFriendsData,
+      items: mappedFriendsData,
       total,
       take: paginationDto.take,
       skip: paginationDto.skip,
