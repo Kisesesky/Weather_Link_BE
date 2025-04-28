@@ -3,6 +3,7 @@ import { ApiTags } from "@nestjs/swagger";
 import { ApiGugunQuery, ApiSidoQuery } from "src/docs/swagger/weather/weather-query-decorator.swagger";
 import { ApiWeatherResponse } from "src/docs/swagger/weather/weather-response-decorator.swagger";
 import { todayForecast, todayWeather, weeklyForecast, weeklyTemp } from "src/docs/swagger/weather/weather.swagger";
+import { SIDO_NAME_MAP } from "src/modules/locations/utils/region-map";
 import { WeatherResponseDto } from "../dto/weather-response.dto";
 import { DailyForecastService } from "../service/daily-forecast.service";
 import { MidForecastService } from "../service/mid-forecast.service";
@@ -112,7 +113,16 @@ export class WeatherResponseController {
       @Query('gugun') gugun: string,
     ): Promise<WeatherResponseDto<any>> {
       try {
-        const normalizedSido = sido.replace(/(특별시|광역시|특별자치시|도|특별자치도)$/, '');
+        let normalizedSido = sido.replace(/(특별시|광역시|특별자치시|특별자치도)$/, '');
+        const reverseSidoMap = Object.fromEntries(
+          Object.entries(SIDO_NAME_MAP).map(([key, value]) => [value, key])
+        );
+      
+        if (reverseSidoMap[sido]) {
+          normalizedSido = reverseSidoMap[sido];
+        } else if (reverseSidoMap[normalizedSido]) {
+          normalizedSido = reverseSidoMap[normalizedSido];
+        }
         const forecasts = await this.midForecastService.transformMidTermForecast(normalizedSido, gugun);
         const groupedForecasts = forecasts.reduce((acc, forecast) => {
           if (!acc[forecast.forecastDate]) {
