@@ -25,6 +25,9 @@ interface AlertData {
 @Injectable()
 export class AlertsSchedulerService {
   private readonly logger = new Logger(AlertsSchedulerService.name);
+  // 캐시 및 마지막 조회 시간 저장을 위한 속성 추가
+  private activeSettingsCache: AlertSetting[] | null = null;
+  private lastFetchedAt: Date | null = null;
 
   constructor(
     private readonly alertSettingService: AlertSettingService,
@@ -37,12 +40,37 @@ export class AlertsSchedulerService {
   @Cron(CronExpression.EVERY_10_MINUTES, { name: 'checkWeatherAlerts' })
   async handleCron() {
     this.logger.log('날씨 알림 체크 시작');
-    const activeSettings =
-      await this.alertSettingService.findAllActiveSettings();
-    this.logger.debug(
-      `알림 설정 조회 완료: ${activeSettings.length}개의 활성 알림 설정 조회`,
-    );
+    const now = new Date();
 
+    // 캐시 로직 추가: 캐시가 없거나, 10분 이상 지났으면 DB에서 다시 조회
+    if (
+      !this.activeSettingsCache ||
+      !this.lastFetchedAt ||
+      now.getTime() - this.lastFetchedAt.getTime() > 10 * 60 * 1000
+    ) {
+      this.logger.log('DB에서 활성 알림 설정 새로 조회합니다.');
+      this.activeSettingsCache =
+        await this.alertSettingService.findAllActiveSettings();
+      this.lastFetchedAt = now;
+      this.logger.debug(
+        `알림 설정 DB 조회 완료: ${this.activeSettingsCache?.length ?? 0}개의 활성 알림 설정 조회`,
+      );
+    } else {
+      this.logger.log(
+        `메모리 캐시 사용: 활성 알림 설정 조회 스킵 (${this.activeSettingsCache?.length ?? 0}개).`,
+      );
+    }
+
+    // 캐시된 데이터를 사용
+    const activeSettings = this.activeSettingsCache;
+
+    // 기존 로직: 활성화된 설정이 없으면 스킵
+    if (!activeSettings || activeSettings.length === 0) {
+      this.logger.log('활성화된 알림 설정 없음. 체크 작업 스킵.');
+      return;
+    }
+
+    // 기존 로직 실행 (activeSettings 순회)
     for (const setting of activeSettings) {
       try {
         // 1. 위치 정보 확인
