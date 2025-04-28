@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=390" />
+  <title>설정</title>
+  <style>
+    body { 
+      font-family: 'Pretendard', sans-serif; 
+      background: #f8fafd; 
+      margin: 0; 
+      padding: 0;
+    }
+    .setting-wrap {
+      max-width: 390px;
+      margin: 36px auto 0;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 8px #e7ecf2;
+      padding: 0 0 20px 0;
+      overflow: hidden;
+    }
+    .header {
+      background: #fff;
+      padding: 20px 24px 0;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .section-group {
+      padding: 16px 18px;
+    }
+    .section-label {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #363a3f;
+    }
+    .row {
+      margin-bottom: 16px;
+    }
+    select,
+    .input-box {
+      width: 100%;
+      font-size: 15px;
+      padding: 10px 12px;
+      border: 1px solid #d6dae1;
+      border-radius: 8px;
+      background: #fafbfc;
+      outline: none;
+      margin-top: 5px;
+    }
+    .alert-setting-box {
+      background: #fafdff;
+      border-radius: 13px;
+      padding: 16px 12px 12px;
+      box-shadow: 0 1px 6px #f3f8fb;
+      margin-top: 10px;
+      position: relative;
+    }
+    .alarm-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .alarm-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { display: none;}
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #d3dbe7;
+      border-radius: 30px;
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+      box-shadow: 0 0 2px #bbb;
+    }
+    .switch input:checked + .slider {
+      background: #3288fd;
+    }
+    .switch input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .slider-label { width: 55px; font-size: 14px; color: #45494c; }
+    .slider-value { width: 55px; text-align: right; font-size: 14px; font-weight: 600;}
+    input[type=range] {
+      flex: 1;
+      accent-color: #3288fd;
+      height: 3px;
+      margin: 0 10px;
+    }
+    .select-sm {
+      width: 120px;
+      font-size: 15px;
+      padding: 7px 10px;
+      border: 1px solid #d6dae1;
+      border-radius: 7px;
+      background: #fafbfc;
+      outline: none;
+      margin-right: 10px;
+    }
+    .note {
+      font-size: 12px;
+      color: #98a2b3;
+      margin-top: 9px;
+      text-align: center;
+      user-select: none;
+    }
+    .toast {
+      display:none;
+      position: fixed;
+      top: 20px; left: 50%;
+      transform: translateX(-50%);
+      background: #3864fd;
+      color: #fff;
+      border-radius: 9px;
+      padding: 10px 20px;
+      box-shadow: 0 2px 8px #b7c5fd;
+      font-size: 15px;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body>
+<div class="setting-wrap">
+  <div class="header">
+    <div style="font-size:12px;color:#b9becb;">&larr; 설정</div>
+    <h2 class="header-title">설정</h2>
+  </div>
+  <div class="section-group">
+    <div class="section-label">위치 설정</div>
+    <div class="row">
+      <label>시/도 선택</label>
+      <select id="city" class="input-box">
+        <option value="">시/도 선택</option>
+        <option>서울특별시</option>
+        <option>부산광역시</option>
+        <option>경기도</option>
+        <option>강원도</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>시/군/구 선택</label>
+      <select id="district" class="input-box">
+        <option value="">시/군/구를 선택하세요</option>
+      </select>
+    </div>
+  </div>
+  <div class="section-group">
+    <div class="section-label">알림 설정</div>
+    <div class="alert-setting-box">
+      <div class="alarm-title-row">
+        <div class="alarm-title">알림</div>
+        <label class="switch">
+          <input type="checkbox" id="alarm-enabled" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="alarm-fields">
+        <div class="slider-row">
+          <div class="slider-label">온도</div>
+          <input type="range" id="temp-range" min="-10" max="40" value="25">
+          <span id="temp-value" class="slider-value">25℃</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">습도</div>
+          <input type="range" id="humid-range" min="0" max="100" value="70">
+          <span id="humid-value" class="slider-value">70%</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">바람</div>
+          <input type="range" id="wind-range" min="0" max="30" value="15">
+          <span id="wind-value" class="slider-value">15m/s</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">미세먼지</div>
+          <select id="pm10" class="select-sm">
+            <option>좋음</option>
+            <option selected>보통</option>
+            <option>나쁨</option>
+            <option>매우 나쁨</option>
+          </select>
+        </div>
+      </div>
+      <div class="note">
+        <span>설정한 조건 중 하나라도 충족되면 알림을 받을 수 있어요</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+  // 서버 API 주소 (반드시 실제 API 주소로 교체!!)
+  const API_URL = 'http://localhost:3000/api/v1'; // ex) 'https://api.yoursite.com/api'
+
+  // 시군구 데이터 예시
+  const districtMap = {
+    '서울특별시': ['종로구', '강남구', '서초구', '마포구'],
+    '부산광역시': ['해운대구', '중구', '사하구'],
+    '경기도': ['수원시', '고양시', '용인시'],
+    '강원도': ['춘천시', '강릉시', '원주시']
+  }
+  document.getElementById('city').addEventListener('change', function(e) {
+    const city = e.target.value
+    const districtSel = document.getElementById('district');
+    districtSel.innerHTML = '<option value="">시/군/구를 선택하세요</option>';
+    if(districtMap[city]) {
+      districtMap[city].forEach((d)=>{
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.text = d;
+        districtSel.appendChild(opt);
+      });
+    }
+  });
+
+  // Range 실시간 표시
+  document.getElementById('temp-range').oninput = function(){
+    document.getElementById('temp-value').textContent = this.value + "℃";
+  }
+  document.getElementById('humid-range').oninput = function(){
+    document.getElementById('humid-value').textContent = this.value + "%";
+  }
+  document.getElementById('wind-range').oninput = function(){
+    document.getElementById('wind-value').textContent = this.value + "m/s";
+  }
+
+  // 알림설정 토글(전체 ON/OFF)
+  document.getElementById('alarm-enabled').onchange = function() {
+    const enabled = this.checked;
+    document.getElementById('alarm-fields').style.display = enabled ? '' : 'none';
+    toggleAllAlerts(enabled);
+  }
+
+  // DB ID 저장 (각 타입별)
+  const settingIds = {
+    TEMPERATURE: null,
+    HUMIDITY: null,
+    WIND: null,
+    AIRQUALITY: null
+  };
+
+  // 직접 JWT 토큰 설정 (실제 토큰으로 교체)
+  const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QHRlc3QuY29tIiwiaWF0IjoxNzQ1ODI2MDYzLCJleHAiOjE3NDU4Mjk2NjN9.IwZgO7AIpJUptBVH1FvfVM5MDQ0-UOzV1tA43NfQgys';
+
+
+  // API 호출 - 서버에 알림 설정 저장
+  async function saveAlertSetting(type, threshold) {
+    try {
+        const active = document.getElementById('alarm-enabled').checked;
+        const settingData = {
+        type: type,
+        threshold: threshold,
+        active: active
+        };
+
+        let url = `${API_URL}/alert-settings`;
+        let method = 'POST';
+
+        if (settingIds[type]) {
+        url = `${API_URL}/alert-settings/${settingIds[type]}`;
+        method = 'PATCH';
+        }
+
+        const res = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${JWT_TOKEN}`  // localStorage 대신 상수 사용
+            },
+            body: JSON.stringify(settingData)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || "저장 에러");
+        if (result.data && result.data.id) settingIds[type] = result.data.id;
+        showToast("설정이 저장되었습니다");
+    } catch (e) {
+        showToast(e.message, true);
+    }
+  }
+
+  // 알림 전체 ON/OFF API (PATCH /alert-settings/toggle-all)
+  async function toggleAllAlerts(active) {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    try {
+      await fetch(`${API_URL}/alert-settings/toggle-all`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ active })
+      });
+      showToast(active ? "모든 알림이 켜졌습니다." : "모든 알림이 꺼졌습니다.");
+    } catch (e) {
+      showToast("전체 알림 토글 오류", true);
+    }
+  }
+
+  // 각 값 변경시 API 저장 (onchange 이벤트 사용)
+  document.getElementById('temp-range').onchange = function() {
+    saveAlertSetting('TEMPERATURE', parseInt(this.value));
+  }
+  document.getElementById('humid-range').onchange = function() {
+    saveAlertSetting('HUMIDITY', parseInt(this.value));
+  }
+  document.getElementById('wind-range').onchange = function() {
+    saveAlertSetting('WIND', parseInt(this.value));
+  }
+  document.getElementById('pm10').onchange = function() {
+    saveAlertSetting('AIRQUALITY', this.value); // 미세먼지는 등급 문자열로
+  }
+
+  // 최초 로딩시 DB에서 설정 불러와서 값 반영
+  window.onload = async function() {
+    await loadSettingsFromAPI();
+  }
+
+  async function loadSettingsFromAPI() {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/alert-settings`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await res.json();
+      if (result.data && Array.isArray(result.data)) {
+        result.data.forEach(setting=>{
+          settingIds[setting.type] = setting.id;
+          switch (setting.type) {
+            case 'TEMPERATURE':
+              document.getElementById('temp-range').value = setting.threshold;
+              document.getElementById('temp-value').textContent = setting.threshold + "℃";
+              break;
+            case 'HUMIDITY':
+              document.getElementById('humid-range').value = setting.threshold;
+              document.getElementById('humid-value').textContent = setting.threshold + "%";
+              break;
+            case 'WIND':
+              document.getElementById('wind-range').value = setting.threshold;
+              document.getElementById('wind-value').textContent = setting.threshold + "m/s";
+              break;
+            case 'AIRQUALITY':
+              document.getElementById('pm10').value = getPm10Grade(setting.threshold);
+              break;
+          }
+        });
+        // 하나라도 active면 전체 toggle ON
+        const anyActive = result.data.some(s=>s.active);
+        document.getElementById('alarm-enabled').checked = anyActive;
+        document.getElementById('alarm-fields').style.display = anyActive ? '' : 'none';
+      }
+    } catch (e) {
+      // silent fail
+    }
+  }
+  // 숫자 → 미세먼지 등급 변환 (서버 threshold가 0~150 등일 수 있음)
+  function getPm10Grade(value) {
+    if (typeof value === "string") return value;
+    if (value >= 150) return '매우 나쁨';
+    if (value >= 80) return '나쁨';
+    if (value >= 30) return '보통';
+    return '좋음';
+  }
+  // 토스트 알림
+  let toastTimer;
+  function showToast(msg, error=false) {
+    const toast = document.getElementById('toast');
+    toast.style.background = error ? "#ea4b4b" : "#3864fd";
+    toast.textContent = msg;
+    toast.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>{ toast.style.display="none"; }, 1500);
+  }
+</script>
+<!-- ... 기존 스타일/헤더는 동일, 아래에 추가 ... -->
+<div class="section-group" style="margin-top:20px;">
+    <div class="section-label">내 알림 설정 목록</div>
+    <div id="alert-list" style="margin-top:10px;"></div>
+  </div>
+  
+  <script>
+  
+  // 알림 아이콘 매핑
+  const typeIcon = {
+    TEMPERATURE: '🌡️',
+    HUMIDITY: '💧',
+    WIND: '🍃',
+    AIRQUALITY: '🏭'
+  };
+  const typeLabel = {
+    TEMPERATURE: '온도', HUMIDITY: '습도', WIND: '바람', AIRQUALITY: '미세먼지'
+  };
+  const unitLabel = {
+    TEMPERATURE: '°C', HUMIDITY: '%', WIND: 'm/s', AIRQUALITY: ''
+  };
+  
+  // [1] 알림 목록 출력
+  async function renderAlertList() {
+    const list = await fetchAlertSettings();
+    const root = document.getElementById('alert-list');
+    root.innerHTML = '';
+    if (!list || list.length === 0) {
+      root.innerHTML = '<div style="color:#adb5bd;text-align:center;">저장된 알림 설정이 없습니다.</div>';
+      return;
+    }
+    list.forEach(s => {
+      // 임계치(미세먼지는 등급 문자열로 표시)
+      let val = s.type === 'AIRQUALITY' ? getPm10Grade(s.threshold) : s.threshold + unitLabel[s.type];
+      root.innerHTML += `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#f6f8fa;border-radius:9px;padding:10px 12px;margin-bottom:8px;">
+          <div style="font-size:18px;margin-right:7px;">${typeIcon[s.type]}</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:500;">${typeLabel[s.type]} 알림</div>
+            <div style="font-size:13px;color:#9ca3af">${val}</div>
+          </div>
+          <label style="margin:0 10px">
+            <input type="checkbox" ${s.active ? "checked" : ""} onchange="toggleAlertActive('${s.id}',this.checked)">
+            <span style="color:${s.active ? '#339af0':'#adb5bd'};font-weight:600;font-size:13px;vertical-align:middle;">
+              ${s.active?'ON':'OFF'}
+            </span>
+          </label>
+          <button onclick="editAlertSetting('${s.id}')" style="background:#e9efff;border:none;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:13px;">✏️</button>
+          <button onclick="deleteAlertSetting('${s.id}')" style="background:#ffeaea;border:none;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:13px;color:#f44;">🗑️</button>
+        </div>
+      `;
+    });
+  }
+  
+  // [2] 목록조회
+  async function fetchAlertSettings() {
+    try {
+      const res = await fetch(`${API_URL}/alert-settings`, {
+        headers: { 'Authorization': `Bearer ${JWT_TOKEN}` }
+      });
+      const {data} = await res.json();
+      return data;
+    } catch { return []; }
+  }
+  
+  // [3] 개별 설정 토글
+  async function toggleAlertActive(id, active) {
+    try {
+      await fetch(`${API_URL}/alert-settings/${id}`, {
+        method:'PATCH',
+        headers: {
+          'Authorization': `Bearer ${JWT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ active })
+      });
+      showToast('상태 변경됨!');
+      renderAlertList();
+    } catch (e) { showToast('상태 변경 실패', true); }
+  }
+  
+  // [4] 삭제
+  async function deleteAlertSetting(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    try {
+      await fetch(`${API_URL}/alert-settings/${id}`, {
+        method:'DELETE',
+        headers: {'Authorization': `Bearer ${JWT_TOKEN}`}
+      });
+      showToast('삭제되었습니다!');
+      renderAlertList();
+    } catch (e) { showToast('삭제 실패', true); }
+  }
+  
+  // [5] 수정 (팝업 등으로 열거나, 기존 UI에 반영)
+  // 여기선 매우 간단하게 prompt 사용. 실제로는 모달/폼 권장!
+  async function editAlertSetting(id) {
+    // 1. 기존 정보 조회
+    const settings = await fetchAlertSettings();
+    const curr = settings.find(x=>x.id===id);
+    if (!curr) return;
+    let newVal = prompt(`새로운 임계치(${typeLabel[curr.type]}):`, 
+      curr.type==='AIRQUALITY'? getPm10Grade(curr.threshold) : curr.threshold);
+    if (!newVal) return;
+    if (curr.type !== 'AIRQUALITY') newVal = Number(newVal);
+    await fetch(`${API_URL}/alert-settings/${id}`, {
+      method:'PATCH',
+      headers: {'Authorization': `Bearer ${JWT_TOKEN}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({threshold:newVal})
+    });
+    showToast('수정 완료');
+    renderAlertList();
+  }
+  
+  // 미세먼지 등급 변환 util
+  function getPm10Grade(val) {
+    if (typeof val === "string") return val;
+    if (val >= 150) return '매우 나쁨';
+    if (val >= 80) return '나쁨';
+    if (val >= 30) return '보통';
+    return '좋음';
+  }
+  
+  // 최초 로딩시 목록도 읽어옴
+  window.onload = function() {
+    loadSettingsFromAPI(); // 기존 설정란 유지
+    renderAlertList();     // 목록도 로드
+  }
+  
+  // showToast 함수는 기존 코드 그대로 사용
+  </script>
+  
+</body>
+</html>
