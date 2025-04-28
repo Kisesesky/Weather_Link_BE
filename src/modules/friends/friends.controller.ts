@@ -43,8 +43,15 @@ export class FriendsController {
     description: '유저 검색 성공',
     type: ResponseDto,
   })
-  async search(@Query() query: SearchUsersQueryDto): Promise<ResponseDto> {
-    const data = await this.friendsService.searchUsers(query.name, query);
+  async search(
+    @Query() query: SearchUsersQueryDto,
+    @Req() req,
+  ): Promise<ResponseDto> {
+    const data = await this.friendsService.searchUsers(
+      query.name,
+      query,
+      req.user.id,
+    );
     return new ResponseDto({
       success: true,
       message: '유저 검색 성공',

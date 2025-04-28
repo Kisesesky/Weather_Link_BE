@@ -3,7 +3,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  Logger,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { Repository } from 'typeorm';
@@ -14,39 +13,53 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { User } from '../users/entities/user.entity';
 import { ILike } from 'typeorm';
 import { UserBasicInfoDto } from 'src/modules/users/dto/user-basic-info.dto';
-import { DailyForecastService } from '../weather/service/daily-forecast.service';
-import { TodayForecastService } from '../weather/service/today-forcast.service';
 
 @Injectable()
 export class FriendsService {
-  private readonly logger = new Logger(FriendsService.name);
-
   constructor(
     @InjectRepository(Friend)
     private friendRepository: Repository<Friend>,
     private usersService: UsersService,
-    private readonly dailyForecastService: DailyForecastService,
-    private readonly todayForecastService: TodayForecastService,
   ) {}
 
   // 유저 검색
-  async searchUsers(name: string, paginationDto: PaginationDto) {
+  async searchUsers(
+    name: string,
+    paginationDto: PaginationDto,
+    currentUserId: string,
+  ) {
     const query = this.usersService.findUserByName(name);
-
-    // 사용자 위치 정보를 함께 가져오도록 join 추가
     query.leftJoinAndSelect('user.location', 'location');
+    // 로그인한 유저 자신 제외
+    query.andWhere('user.id != :currentUserId', { currentUserId });
 
-    // 페이지네이션 처리
+    // 친구 또는 친구 요청 중인 목록 조회
+    const relations = await this.friendRepository.find({
+      where: [
+        { sender: { id: currentUserId } },
+        { receiver: { id: currentUserId } },
+      ],
+    });
+
+    const relatedUserIds = new Set<string>();
+    relations.forEach((rel) => {
+      if (rel.sender?.id === currentUserId && rel.receiver?.id) {
+        relatedUserIds.add(rel.receiver.id);
+      } else if (rel.receiver?.id === currentUserId && rel.sender?.id) {
+        relatedUserIds.add(rel.sender.id);
+      }
+    });
+
+    // 검색 결과에서 제외
     const paginatedResult = await paginate(User, paginationDto, query);
-
-    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
-    const mappedData = paginatedResult.data.map((user) =>
-      UserBasicInfoDto.fromUser(user),
+    const filtered = paginatedResult.data.filter(
+      (user) => !relatedUserIds.has(user.id),
     );
+    const mappedData = filtered.map((user) => UserBasicInfoDto.fromUser(user));
 
     return {
       data: mappedData,
-      total: paginatedResult.total,
+      total: filtered.length,
       take: paginationDto.take,
       skip: paginationDto.skip,
     };
@@ -193,84 +206,23 @@ export class FriendsService {
 
     const [friends, total] = await this.friendRepository.findAndCount({
       where: whereCondition,
-      relations: [
-        'sender',
-        'receiver',
-        'sender.location',
-        'receiver.location',
-      ],
+      // sender와 receiver의 location 정보도 함께 로드
+      relations: ['sender', 'receiver', 'sender.location', 'receiver.location'],
       skip: paginationDto.skip,
       take: paginationDto.take,
     });
 
-    // 친구 User 객체만 추출
+    // 조회된 Friend 관계 목록에서 친구 User 객체만 추출
     const friendUsers = friends.map((friend) =>
       friend.sender.id === userId ? friend.receiver : friend.sender,
     );
 
-    // 친구 정보와 날씨 정보 매핑
-    const mappedFriendsData = await Promise.all(
-      friendUsers.map(async (user) => {
-        const userDto = UserBasicInfoDto.fromUser(user);
-        // 위치 정보가 있는 경우 날씨 정보 조회
-        if (user.location?.sido && user.location?.gugun) {
-          try {
-            // Promise.allSettled를 사용하여 두 API 호출 중 하나가 실패해도 계속 진행하도록 함
-            const results = await Promise.allSettled([
-              this.dailyForecastService.getCurrentWeatherByRegionName(
-                user.location.sido,
-                user.location.gugun,
-              ),
-              this.todayForecastService.getForecastDataByRegionName(
-                user.location.sido,
-                user.location.gugun,
-              ),
-            ]);
-
-            const currentWeatherResult = results[0];
-            const forecastResult = results[1];
-
-            let temp: number | null = null;
-            let description: string | null = null;
-
-            if (currentWeatherResult.status === 'fulfilled' && currentWeatherResult.value) {
-              temp = currentWeatherResult.value.temperature;
-              // 추가 날씨 정보가 필요하면 currentWeatherResult.value에서 가져올 수 있음
-            }
-
-            if (forecastResult.status === 'fulfilled' && forecastResult.value) {
-               // skyCondition 사용 또는 precipitationType을 조합하여 description 설정
-               description = forecastResult.value.skyCondition ?? '정보 없음';
-               if (forecastResult.value.precipitationType && forecastResult.value.precipitationType !== '없음') {
-                 description += `, ${forecastResult.value.precipitationType}`;
-               }
-            } else if (forecastResult.status === 'rejected') {
-                this.logger.warn(`Failed to get forecast for ${user.location.sido} ${user.location.gugun}: ${forecastResult.reason}`);
-            }
-            if (currentWeatherResult.status === 'rejected'){
-                this.logger.warn(`Failed to get current weather for ${user.location.sido} ${user.location.gugun}: ${currentWeatherResult.reason}`);
-            }
-
-            // 둘 다 null이 아닐 때만 weather 객체 생성
-            if (temp !== null && description !== null) {
-                userDto.weather = { temp, description };
-            } else {
-                userDto.weather = null; // 하나라도 실패하면 null
-            }
-
-          } catch (error) {
-            this.logger.error(
-              `Error fetching weather for user ${user.id} (${user.location.sido} ${user.location.gugun}): ${error.message}`,
-            );
-            userDto.weather = null; // 오류 발생 시 날씨 정보 null
-          }
-        } else {
-          userDto.weather = null; // 위치 정보 없으면 날씨 정보 null
-        }
-        return userDto;
-      }),
+    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
+    const mappedFriendsData = friendUsers.map((user) =>
+      UserBasicInfoDto.fromUser(user),
     );
 
+    // 최종 결과 객체 반환
     return {
       data: mappedFriendsData,
       total,
