@@ -143,7 +143,6 @@
         msg.innerHTML = `
           <div class="message-header">
             <img class="profile-img" src="${profileImage}" alt="Profile Image">
-            <span class="sender-name">You</span>
           </div>
           <p><strong>You:</strong> ${message.content}</p>
           <div class="message-time">${currentTime}</div>
@@ -155,7 +154,6 @@
             <img class="profile-img" src="${profileImage}" alt="Profile Image">
             <span class="sender-name">${message.sender.name}</span>
           </div>
-          <p><strong>${message.sender.name}:</strong> ${message.content}</p>
           <div class="message-time">${currentTime}</div>
         `;
       }

@@ -24,7 +24,7 @@ async function bootstrap() {
     }),
   );
 
-  // CORS 설정
+  // CORS 설정 - 배포용
   app.enableCors({
     origin: [
       'https://weather-link.site',
@@ -35,6 +35,13 @@ async function bootstrap() {
     ],
     credentials: true,
   });
+
+  // CORS 설정 - 개발용
+  // app.enableCors({
+  //   origin: '*',
+  //   credentials: true,
+  // });
+  
 
   //Swagger 암호화 .env development시 개방형열람, 배포이후 production으로 설정시 암호화열람
   if (configService.nodeEnv !== 'development') {
