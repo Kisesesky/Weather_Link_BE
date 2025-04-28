@@ -23,23 +23,43 @@ export class FriendsService {
   ) {}
 
   // 유저 검색
-  async searchUsers(name: string, paginationDto: PaginationDto) {
+  async searchUsers(
+    name: string,
+    paginationDto: PaginationDto,
+    currentUserId: string,
+  ) {
     const query = this.usersService.findUserByName(name);
-
-    // 사용자 위치 정보를 함께 가져오도록 join 추가
     query.leftJoinAndSelect('user.location', 'location');
+    // 로그인한 유저 자신 제외
+    query.andWhere('user.id != :currentUserId', { currentUserId });
 
-    // 페이지네이션 처리
+    // 친구 또는 친구 요청 중인 목록 조회
+    const relations = await this.friendRepository.find({
+      where: [
+        { sender: { id: currentUserId } },
+        { receiver: { id: currentUserId } },
+      ],
+    });
+
+    const relatedUserIds = new Set<string>();
+    relations.forEach((rel) => {
+      if (rel.sender?.id === currentUserId && rel.receiver?.id) {
+        relatedUserIds.add(rel.receiver.id);
+      } else if (rel.receiver?.id === currentUserId && rel.sender?.id) {
+        relatedUserIds.add(rel.sender.id);
+      }
+    });
+
+    // 검색 결과에서 제외
     const paginatedResult = await paginate(User, paginationDto, query);
-
-    // UserBasicInfoDto를 사용하여 데이터 매핑 (람다 함수 사용)
-    const mappedData = paginatedResult.data.map((user) =>
-      UserBasicInfoDto.fromUser(user),
+    const filtered = paginatedResult.data.filter(
+      (user) => !relatedUserIds.has(user.id),
     );
+    const mappedData = filtered.map((user) => UserBasicInfoDto.fromUser(user));
 
     return {
       data: mappedData,
-      total: paginatedResult.total,
+      total: filtered.length,
       take: paginationDto.take,
       skip: paginationDto.skip,
     };
