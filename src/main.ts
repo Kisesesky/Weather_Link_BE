@@ -30,7 +30,6 @@ async function bootstrap() {
       'https://weather-link.site',
       'http://localhost:3000', // 개발용 프론트 주소
       'http://localhost:8080', // 개발용 프론트 주소
-      'http://localhost:5173', // FRONTEND_URL 값에 맞춰 추가/수정
       'https://your-frontend.com', // 배포용 프론트 주소
       'https://weather-link.vercel.app/',
     ],
@@ -42,7 +41,6 @@ async function bootstrap() {
   //   origin: '*',
   //   credentials: true,
   // });
-  
 
   //Swagger 암호화 .env development시 개방형열람, 배포이후 production으로 설정시 암호화열람
   if (configService.nodeEnv !== 'development') {
@@ -78,7 +76,6 @@ async function bootstrap() {
     './src/docs/swagger/swagger-spec.json',
     JSON.stringify(document),
   );
-  await app.listen(process.env.PORT ?? 3000,'0.0.0.0');
-  
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();
