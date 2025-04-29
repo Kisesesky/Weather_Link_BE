@@ -135,6 +135,7 @@ export class AuthController {
   ) {
     try {
       const frontendUrl = this.appConfigService.frontendUrl;
+      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -144,7 +145,7 @@ export class AuthController {
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
 
-        return res.redirect(`${frontendUrl}/main`);
+        return res.redirect(frontendUrl);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
@@ -152,7 +153,7 @@ export class AuthController {
 
         res.cookie('Authentication', accessToken, accessOptions);
 
-        return res.redirect(`${frontendUrl}/signup/social/complete`);
+        return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
@@ -186,6 +187,7 @@ export class AuthController {
   ) {
     try {
       const frontendUrl = this.appConfigService.frontendUrl;
+      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -193,13 +195,13 @@ export class AuthController {
           this.authService.makeJwtToken(user.email, origin);
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-        return res.redirect(`${frontendUrl}/main`);
+        return res.redirect(frontendUrl);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
           this.authService.createSocialTemporaryToken(socialProfile, origin);
         res.cookie('Authentication', accessToken, accessOptions);
-        return res.redirect(`${frontendUrl}/signup/social/complete`);
+        return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
@@ -233,6 +235,7 @@ export class AuthController {
   ) {
     try {
       const frontendUrl = this.appConfigService.frontendUrl;
+      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -240,13 +243,13 @@ export class AuthController {
           this.authService.makeJwtToken(user.email, origin);
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-        return res.redirect(`${frontendUrl}/main`);
+        return res.redirect(frontendUrl);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
           this.authService.createSocialTemporaryToken(socialProfile, origin);
         res.cookie('Authentication', accessToken, accessOptions);
-        return res.redirect(`${frontendUrl}/signup/social/complete`);
+        return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
