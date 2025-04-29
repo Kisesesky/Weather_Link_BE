@@ -34,6 +34,8 @@ async function bootstrap() {
       'https://your-frontend.com', // 배포용 프론트 주소
       'https://weather-link.vercel.app/',
       'https://weather-link.vercel.app',
+      'https://www.weather-link.site/',
+      'https://www.weather-link.site'
     ],
     credentials: true,
   });
