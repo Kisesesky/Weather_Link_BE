@@ -28,6 +28,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'https://weather-link.site',
+      'https://api.weather-link.site',
       'http://localhost:3000', // 개발용 프론트 주소
       'http://localhost:8080', // 개발용 프론트 주소
       'https://your-frontend.com', // 배포용 프론트 주소

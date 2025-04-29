@@ -17,6 +17,7 @@ import * as jwt from 'jsonwebtoken';
   cors: {
     origin: [
       'https://weather-link.site',
+      'https://api.weather-link.site',
       'http://localhost:3000',
       'http://localhost:5173',
       'https://weather-link.vercel.app/',
