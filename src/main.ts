@@ -29,16 +29,15 @@ async function bootstrap() {
     origin: [
       'https://weather-link.site',
       'https://api.weather-link.site',
-      'http://localhost:3000',
-      'http://localhost:8080',
-      'https://your-frontend.com',
+      'http://localhost:3000', // 개발용 프론트 주소
+      'http://localhost:8080', // 개발용 프론트 주소
+      'https://your-frontend.com', // 배포용 프론트 주소
+      'https://weather-link.vercel.app/',
       'https://weather-link.vercel.app',
+      'https://www.weather-link.site/',
       'https://www.weather-link.site'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Set-Cookie'],
   });
 
   // CORS 설정 - 개발용
