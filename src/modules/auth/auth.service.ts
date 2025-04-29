@@ -172,7 +172,7 @@ export class AuthService {
   setCookieOption(
     maxAge: number,
     requestDomain: string,
-    isHttpOnly = true,
+    isHttpOnly = true, // 파라미터 값 사용
   ): CookieOptions {
     let domain: string | undefined;
 
@@ -193,12 +193,15 @@ export class AuthService {
 
     const cookieOptions: CookieOptions = {
       path: '/',
-      httpOnly: isHttpOnly,
-      secure: true, // HTTPS에서만 쿠키 전송
-      sameSite: 'lax', // CSRF 보호를 위해 Lax로 설정
-      domain: domain,
-      maxAge: maxAge,
+      httpOnly: isHttpOnly, // 파라미터 값 사용
+      maxAge,
+      secure: true,
+      sameSite: 'none',
     };
+
+    if (domain !== undefined) {
+      cookieOptions.domain = domain;
+    }
 
     return cookieOptions;
   }
