@@ -20,13 +20,13 @@ export class NaverAuthGuard extends AuthGuard('naver') {
 
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://weather-link.vercel.app',
+      'https://weather-link.site/',
     ];
     if (!origin || !allowedOrigins.includes(origin)) {
       console.warn(
-        `Invalid or missing origin for OAuth redirect: ${origin}. Using default.`,
+        `리다이렉트 주소가 유효하지 않습니다. ${origin}. 기본 주소로 리다이렉트합니다.`,
       );
-      origin = 'https://weather-link.vercel.app'; // Fallback
+      origin = 'https://weather-link.site/'; // Fallback
     }
 
     const stateObject = {
