@@ -183,7 +183,9 @@ export class AuthService {
       domain = undefined;
     } else {
       try {
-        const url = new URL(requestDomain);
+        const url = new URL(
+          requestDomain.startsWith('http') ? requestDomain : `https://${requestDomain}`,
+        );
         domain = url.hostname;
       } catch (e) {
         console.error('Invalid requestDomain for URL parsing:', requestDomain);
