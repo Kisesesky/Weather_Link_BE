@@ -20,6 +20,7 @@ import * as jwt from 'jsonwebtoken';
       'http://localhost:3000',
       'http://localhost:5173',
       'https://weather-link.vercel.app/',
+      'https://weather-link.vercel.app',
     ],
     credentials: true,
   },
