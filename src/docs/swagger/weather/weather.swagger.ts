@@ -22,8 +22,8 @@ export const todayWeather = () => {
                 }
             },
             "forecast": {                            // 예보 정보
-                "skyCondition": "흐림",              // 하늘 상태 (맑음, 흐림 등)
-                "precipitationType": "비"            // 강수 형태 (없음, 비, 눈 등)
+                "skyCondition": "흐림",              // 하늘 상태 (맑음, 보통, 구름많음, 흐림)
+                "precipitationType": "비"            // 강수 형태 (없음, 비, 비/눈, 눈, 소나기)
             }
         }
         `
@@ -31,7 +31,7 @@ export const todayWeather = () => {
 }
 export const todayForecast = () => {
     return ApiOperation({
-      summary: '오늘의 날씨 정보 조오늘의 날씨 예보 조회회',
+      summary: '오늘의 날씨 예보 조회',
       description: `
         응답 예시:
             {
@@ -41,15 +41,15 @@ export const todayForecast = () => {
                     "time": "17:00",                    // 예보 시간 (24시간제)
                     "temperature": 18,                  // 기온 (°C)
                     "rainfall": 60,                     // 강수 확률 (%)
-                    "sky": "흐림",                      // 하늘 상태 (맑음, 흐림 등)
-                    "rainType": "비"                    // 강수 형태 (없음, 비, 눈 등)
+                    "skyCondition": "흐림",             // 하늘 상태 (맑음, 보통, 구름많음, 흐림)
+                    "precipitationType": "비"           // 강수 형태 (없음, 비, 비/눈, 눈, 소나기)
                 },
                 {
                     "time": "18:00",
                     "temperature": 18,
                     "rainfall": 60,
-                    "sky": "흐림",
-                    "rainType": "비"
+                    "skyCondition": "흐림",
+                    "precipitationType": "비"
                 }
                 ]
             }

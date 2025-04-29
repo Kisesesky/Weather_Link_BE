@@ -24,6 +24,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ResponseDto } from 'src/common/dto/response.dto';
 import { RemoveFriendDto } from './dto/remove-friend.dto';
 import { SearchFriendsDto } from './dto/search-friends.dto';
+import { SearchUsersQueryDto } from './dto/search-users-query.dto';
 
 @ApiTags('친구 관리')
 @ApiBearerAuth()
@@ -33,20 +34,23 @@ export class FriendsController {
   constructor(private readonly friendsService: FriendsService) {}
 
   @Get('search')
-  @ApiOperation({ summary: '유저 검색' })
+  @ApiOperation({ summary: '유저 검색 (친구 상태 포함)' })
   @ApiQuery({ name: 'name', required: true, description: '검색할 닉네임' })
   @ApiQuery({ name: 'skip', required: false, description: '건너뛸 항목 수' })
   @ApiQuery({ name: 'take', required: false, description: '가져올 항목 수' })
   @ApiResponse({
     status: 200,
-    description: '유저 검색 성공',
-    type: ResponseDto,
+    description: '유저 검색 성공. 각 유저 정보에 친구 상태(status) 포함됨.',
   })
   async search(
-    @Query('name') name: string,
-    @Query() paginationDto: PaginationDto,
+    @Query() query: SearchUsersQueryDto,
+    @Req() req,
   ): Promise<ResponseDto> {
-    const data = await this.friendsService.searchUsers(name, paginationDto);
+    const data = await this.friendsService.searchUsers(
+      req.user.id,
+      query.name,
+      query,
+    );
     return new ResponseDto({
       success: true,
       message: '유저 검색 성공',

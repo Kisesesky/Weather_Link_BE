@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
 import axios from "axios";
-import * as moment from 'moment';
+import moment from 'moment';
 import { LocationsEntity } from "src/modules/locations/entities/location.entity";
 import { LessThan, Repository } from "typeorm";
 import { WeatherAirEntity } from "../entities/weather-air.entity";
@@ -22,7 +22,7 @@ export class WeatherAirService {
     private readonly weatherConfigService: WeatherConfigService
   ) {}
 
-  @Cron('15 */2 * * *') //2시간 15분 간격... 정각에 바로 데이터가 업데이트되지 않을수도잇음
+  @Cron('13 */2 * * *') //2시간 15분 간격... 정각에 바로 데이터가 업데이트되지 않을수도잇음
   async handleAirQualityJob() {
     this.logger.log('미세먼지 데이터 수집')
     const result = await this.fetchAllAirQuality()
@@ -84,6 +84,7 @@ export class WeatherAirService {
   }
 
   async findLocationByFullName(fullName: string): Promise<LocationsEntity | null> {
+    // "경기도 성남시분당구" -> ["경기도", "성남시분당구"]
     const [sido, gugun] = fullName.split(' ');
     
     return this.locationRepository.findOne({
@@ -94,10 +95,11 @@ export class WeatherAirService {
     });
   }
 
-  async findLocationByRegionName(sido: string): Promise<LocationsEntity | null> {
+  async findLocationByRegionName(sido: string, gugun?: string): Promise<LocationsEntity | null> {
     return this.locationRepository.findOne({
       where: {
         sido,
+        ...(gugun && { gugun })
       }
     });
   }

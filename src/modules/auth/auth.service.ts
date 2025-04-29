@@ -145,55 +145,77 @@ export class AuthService {
 
   setJwtAccessToken(email: string, requestDomain: string) {
     const payload = { sub: email };
-    const maxAge = 3600 * 1000;
+    const maxAge = 1 * 60 * 60 * 1000; // 1시간
     const accessToken = this.jwtService.sign(payload, {
       secret: this.appConfigService.jwtSecret,
       expiresIn: maxAge / 1000,
     });
     return {
       accessToken,
-      accessOptions: this.setCookieOption(maxAge, requestDomain),
+      accessOptions: this.setCookieOption(maxAge, requestDomain, false), // httpOnly: false
     };
   }
 
   setJwtRefreshToken(email: string, requestDomain: string) {
     const payload = { sub: email };
-    const maxAge = 30 * 24 * 3600 * 1000;
+    const maxAge = 30 * 24 * 3600 * 1000; // 30일
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.appConfigService.jwtSecret,
+      secret: this.appConfigService.jwtRefreshSecret,
       expiresIn: maxAge / 1000,
     });
     return {
       refreshToken,
-      refreshOptions: this.setCookieOption(maxAge, requestDomain),
+      refreshOptions: this.setCookieOption(maxAge, requestDomain, true), // httpOnly: true
     };
   }
 
-  setCookieOption(maxAge: number, requestDomain: string): CookieOptions {
-    let domain: string;
+  setCookieOption(
+    maxAge: number,
+    requestDomain: string,
+    isHttpOnly = true, // 파라미터 값 사용
+  ): CookieOptions {
+    let domain: string | undefined;
 
     if (
       requestDomain.includes('127.0.0.1') ||
       requestDomain.includes('localhost')
-    )
-      domain = 'localhost';
-    else {
-      domain = requestDomain.split(':')[0];
+    ) {
+      domain = undefined;
+    } else {
+      try {
+        const url = new URL(
+          requestDomain.startsWith('http') ? requestDomain : `https://${requestDomain}`,
+        );
+        domain = url.hostname;
+      } catch (e) {
+        console.error('Invalid requestDomain for URL parsing:', requestDomain);
+        domain = requestDomain.split(':')[0];
+      }
     }
 
-    return {
-      domain,
+    const cookieOptions: CookieOptions = {
       path: '/',
-      httpOnly: true,
+      httpOnly: isHttpOnly, // 파라미터 값 사용
       maxAge,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
     };
+
+    if (domain !== undefined) {
+      cookieOptions.domain = domain;
+    }
+
+    return cookieOptions;
   }
 
   expireJwtToken(requestDomain: string) {
+    // Access Token 쿠키 만료 (httpOnly: false 가정)
+    const accessOptions = this.setCookieOption(0, requestDomain, false);
+    // Refresh Token 쿠키 만료 (httpOnly: true 가정)
+    const refreshOptions = this.setCookieOption(0, requestDomain, true);
     return {
-      accessOptions: this.setCookieOption(0, requestDomain),
-      refreshOptions: this.setCookieOption(0, requestDomain),
+      accessOptions,
+      refreshOptions,
     };
   }
 
@@ -302,7 +324,7 @@ export class AuthService {
 
     return {
       accessToken,
-      accessOptions: this.setCookieOption(maxAge, origin), // 쿠키 옵션 설정
+      accessOptions: this.setCookieOption(maxAge, origin, false), // httpOnly: false
     };
   }
 

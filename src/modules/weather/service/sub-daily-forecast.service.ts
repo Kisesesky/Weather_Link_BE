@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WeatherConfigService } from 'src/config/weather/config.service';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { DailyForecastEntity } from '../entities/daily-forecast.entity';
 import { HttpService } from '@nestjs/axios';
 import { calculatePerceivedTemperature } from '../utils/perceived-temperature.util';
@@ -10,10 +10,11 @@ import { LocationsEntity } from 'src/modules/locations/entities/location.entity'
 import { RegionEntity } from 'src/modules/locations/entities/region.entity';
 import { Cron } from '@nestjs/schedule';
 import * as dayjs from 'dayjs';
+import pLimit from 'p-limit';
 
 @Injectable()
-export class DailyForecastService {
-  private readonly logger = new Logger(DailyForecastService.name);
+export class SubDailyForecastService {
+  private readonly logger = new Logger(SubDailyForecastService.name);
 
   constructor(
     @InjectRepository(RegionEntity)
@@ -27,13 +28,13 @@ export class DailyForecastService {
   ) {}
 
   // 날씨 조회하기 nx,ny
-  async getCurrentWeather(nx: number, ny: number) {
-    const servicekey = this.weatherConfigService.dayForecastApiKey as string;
-    const serviceUrl = this.weatherConfigService.dayForecastApiUrl as string;
+  async getSubCurrentWeather(nx: number, ny: number) {
+    const serviceUrl = this.weatherConfigService.subDailyForecastApiUrl as string;
+    const servicekey = this.weatherConfigService.subDailyForecastApiKey as string;
     const baseDate = this.getTodayDate();
     const baseTime = this.getBaseTime();
-    const url = `${serviceUrl}?pageNo=1&numOfRows=100&dataType=json&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}&authKey=${servicekey}`;
-
+    
+    const url = `${serviceUrl}serviceKey=${servicekey}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`
     try {
       const { data } = await firstValueFrom(this.httpService.get(url));
 
@@ -97,7 +98,7 @@ export class DailyForecastService {
     return `${String(hour).padStart(2, '0')}00`;
   }
 
-  @Cron('0 0 0 * * *') // 매일 자정에 실행
+  @Cron('40 0 0 * * *') // 매일 자정에 실행
   async deleteOldForecasts() {
       try {
           const sevenDaysAgo = dayjs().subtract(7, 'day').format('YYYYMMDD');
@@ -116,11 +117,10 @@ export class DailyForecastService {
           this.logger.error('오래된 일기 예보 데이터 삭제 중 오류 발생:', error);
       }
   }
-
-  // 모든 지역의 날씨 데이터 수집 및 저장
-  async collectAllRegionsWeather() {
+  
+  @Cron('10 */1 * * *') // 매 1시간마다 10분에 실행
+  async subCollectAllRegionsWeather() {
     try {
-      // 모든 region 데이터 조회 (nx, ny가 있는 것만)
       const regions = await this.regionRepository
         .createQueryBuilder('region')
         .where('region.nx IS NOT NULL')
@@ -132,16 +132,32 @@ export class DailyForecastService {
         return [];
       }
 
-      // 각 region에 대해 날씨 데이터 수집 및 저장
-      const weatherPromises = regions.map(async (region) => {
-        try {
-          // 날씨 데이터 조회
-          const weatherData = await this.getCurrentWeather(
-            region.nx,
-            region.ny,
-          );
+      const now = new Date();
+      const hourStart = new Date(now);
+      hourStart.setMinutes(0, 0, 0);
+      const hourEnd = new Date(now);
+      hourEnd.setMinutes(59, 59, 999);
 
-          // 체감온도 계산
+      const limit = pLimit(5);
+      const failedRegions: typeof regions = [];
+
+      const processRegion = async (region) => {
+        try {
+          const existing = await this.dailyForecastRepository.findOne({
+            where: {
+              regionName: region.name,
+              createdAt: Between(hourStart, hourEnd),
+            },
+          });
+
+          if (existing) {
+            this.logger.log(
+              `중복 데이터 감지 - ${region.name} ${hourStart.toISOString()} ~ ${hourEnd.toISOString()}`,
+            );
+            return null;
+          }
+
+          const weatherData = await this.getSubCurrentWeather(region.nx, region.ny);
           const perceivedTemp = calculatePerceivedTemperature(
             weatherData.temperature,
             weatherData.humidity,
@@ -149,43 +165,50 @@ export class DailyForecastService {
           );
 
           const weatherEntity = this.dailyForecastRepository.create({
-            region: region,
+            region,
             regionName: region.name,
             temperature: weatherData.temperature || 0,
             humidity: weatherData.humidity || 0,
             rainfall: weatherData.rainfall || 0,
             windSpeed: weatherData.windSpeed || 0,
             windDirection: weatherData.windDirection || 0,
-            perceivedTemperature: perceivedTemp || weatherData.temperature || 0,
+            perceivedTemperature: perceivedTemp ?? weatherData.temperature ?? 0,
           });
 
           await this.dailyForecastRepository.save(weatherEntity);
           this.logger.log(`날씨 데이터 저장 완료 - 지역: ${region.name}`);
-
           return weatherEntity;
         } catch (error) {
-          this.logger.error(
-            `지역 ${region.name}의 날씨 데이터 수집 실패: ${error.message}`,
-          );
+          this.logger.error(`지역 ${region.name}의 날씨 수집 실패: ${error.message}`);
+          failedRegions.push(region);
           return null;
         }
-      });
+      };
 
-      // 모든 Promise 완료 대기
-      const results = await Promise.all(weatherPromises);
+      const weatherPromises = regions.map((region) => limit(() => processRegion(region)));
+      let results = await Promise.all(weatherPromises);
 
-      // 성공적으로 저장된 데이터 수 계산
-      const successCount = results.filter((result) => result !== null).length;
+      if (failedRegions.length > 0) {
+        this.logger.warn(`재시도 대상 지역 ${failedRegions.length}개`);
+        const retryPromises = failedRegions.map((region) =>
+          limit(() => processRegion(region)),
+        );
+        const retryResults = await Promise.all(retryPromises);
+        results = [...results, ...retryResults];
+      }
+
+      const successCount = results.filter((r) => r !== null).length;
       this.logger.log(
         `전체 ${regions.length}개 지역 중 ${successCount}개 지역의 날씨 데이터 수집 완료`,
       );
 
-      return results.filter((result) => result !== null);
+      return results.filter((r) => r !== null);
     } catch (error) {
       this.logger.error(`날씨 데이터 수집 중 오류 발생: ${error.message}`);
       throw error;
     }
   }
+
 
   // 특정 지역(시/군/구/동)의 날씨 데이터 수집
   async collectLocationWeather(sido: string, gugun?: string, dong?: string) {
@@ -214,7 +237,7 @@ export class DailyForecastService {
       }
 
       // 날씨 데이터 조회
-      const weatherData = await this.getCurrentWeather(
+      const weatherData = await this.getSubCurrentWeather(
         location.nx,
         location.ny,
       );

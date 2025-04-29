@@ -1,3 +1,4 @@
+# 무중단배포 미사용시 주석해제
 name: Build and Push Docker image
 
 on:
@@ -6,12 +7,10 @@ on:
     branches: [ dev ]   # dev 브랜치에 push될 때 실행
 
 jobs:
-  build:
+  build-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

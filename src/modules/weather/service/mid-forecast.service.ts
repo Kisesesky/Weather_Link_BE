@@ -23,7 +23,7 @@ export class MidForecastService {
     private readonly weatherConfigService: WeatherConfigService
   ) {}
   
-  @Cron('0 0 0 * * *') // 매일 자정에 실행
+  @Cron('30 0 0 * * *') // 매일 자정에 실행
   async deleteOldForecasts() {
     try {
       const today = dayjs().format('YYYYMMDD');
@@ -47,8 +47,9 @@ export class MidForecastService {
   async deleteOldForecastsManually() {
     return this.deleteOldForecasts();
   }
+  
 
-  @Cron('0 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
+  @Cron('20 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
   async fetchAndSaveMidForecasts(regionCode?: string): Promise<void> {
     const servicekey = this.weatherConfigService.midForecastApiKey as string;
     const serviceUrl = this.weatherConfigService.midForecastApiUrl as string;
@@ -61,7 +62,7 @@ export class MidForecastService {
     const tmef1 = today.format('YYYYMMDD');
     const tmef2 = today.add(8, 'day').format('YYYYMMDD');
 
-    const url1 = `${serviceUrl}${regionCode ? `reg=${regionCode}&` : ''}tmfc1=${tmfc1}&tmfc2=${tmfc2}&tmef1=${tmef1}&tmef2=${tmef2}&disp=1&authKey=${servicekey}`;
+    const url1 = `${serviceUrl}reg=&tmfc1=${tmfc1}&tmfc2=${tmfc2}&tmef1=${tmef1}&tmef2=${tmef2}&disp=1&authKey=${servicekey}`;
     await this.fetchAndSaveForecasts(url1);
 
     // 두 번째 API 호출 (오늘 기준으로 3일치데이터)
@@ -71,7 +72,7 @@ export class MidForecastService {
     const tmef3 = today.add(5, 'day').format('YYYYMMDD');
     const tmef4 = today.add(10, 'day').format('YYYYMMDD');
 
-    const url2 = `${serviceUrl}${regionCode ? `reg=${regionCode}&` : ''}tmfc1=${tmfc3}&tmfc2=${tmfc4}&tmef1=${tmef3}&tmef2=${tmef4}&disp=1&authKey=${servicekey}`;
+    const url2 = `${serviceUrl}reg=&tmfc1=${tmfc3}&tmfc2=${tmfc4}&tmef1=${tmef3}&tmef2=${tmef4}&disp=1&authKey=${servicekey}`;
     await this.fetchAndSaveForecasts(url2);
 
     this.logger.log(`Mid forecasts 저장 완료 (${regionCode || '전체 지역'})`);
@@ -133,17 +134,6 @@ export class MidForecastService {
       this.logger.error('데이터 수집 실패:', err.message);
       throw err;
     }
-  }
-  private findRegIdBySido(sido: string): string | null {
-    const normalizedSido = sido.replace(/(특별시|광역시|특별자치시|도|특별자치도)$/, '');
-    
-    for (const mapping of REGION_MAPS) {
-      const region = mapping.regions.find(r => r.sido === normalizedSido);
-      if (region) {
-        return mapping.regId;
-      }
-    }
-    return null;
   }
 
   async getForecastsByRegion(regId: string) {

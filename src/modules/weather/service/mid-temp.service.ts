@@ -23,7 +23,7 @@ export class MidTempService {
         private readonly midForecastService: MidForecastService,
     ) {}
 
-    @Cron('0 0 0 * * *') // 매일 자정에 실행
+    @Cron('26 0 0 * * *') // 매일 자정에 실행
     async deleteOldForecasts() {
         try {
             const sevenDaysAgo = dayjs().subtract(7, 'day').format('YYYYMMDD');
@@ -47,7 +47,7 @@ export class MidTempService {
         return this.deleteOldForecasts();
     }
     
-    @Cron('0 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
+    @Cron('25 */12 * * *') //12시간 간격(데이터 12시간 간격으로나옴)
     async fetchAndSaveMidTempForecasts(regionCode?: string): Promise<void> {
         const servicekey = this.weatherConfigService.midTempApiKey as string;
         const serviceUrl = this.weatherConfigService.midTempApiUrl as string;
@@ -138,6 +138,9 @@ export class MidTempService {
     }
 
     private getRegId(sido: string, gugun: string): string | undefined {
+        if(sido === '세종특별자치시') {
+            return this.locationsService.findRegIdTemp('세종특별자치시','세종')
+        }
         // 시도와 구군에서 상세 주소(ex: 분당구)를 제외하고 regId 찾기
         const mainGugun = gugun?.split(/[\s,]+/)[0]; // 첫 번째 구군만 사용 (예: "성남시분당구" -> "성남시")
         this.logger.debug(`Looking up regId for sido: ${sido}, mainGugun: ${mainGugun}`);
@@ -202,6 +205,8 @@ export class MidTempService {
         // 그 외에는 그대로 반환 (경기도, 강원도 등)
         return gugun;
     }
+    
+    
 
     public async getMidTermTempWithForecast(sido: string, gugun: string) {
         const regId = this.getRegId(sido, gugun);
@@ -217,9 +222,14 @@ export class MidTempService {
             tempData = await this.getForecastsByRegion(regId);
         }
 
+        // 예보 데이터 조회
         const forecastData = await this.midForecastService.transformMidTermForecast(sido, gugun);
+
+        // 날짜별로 데이터 합치기
         const combinedData = tempData.map(temp => {
+            // 예보 데이터에서 같은 날짜의 오전/오후 데이터를 모두 찾기
             const forecasts = forecastData.filter(f => f.forecastDate === temp.forecastDate);
+            
             const response: any = {
                 location: {
                     sido,
@@ -240,8 +250,10 @@ export class MidTempService {
                     afternoon: forecasts.find(f => f.forecastTimePeriod === '오후')
                 };
             }
+
             return response;
         });
+
         return combinedData;
     }
 }

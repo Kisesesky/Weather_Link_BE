@@ -61,11 +61,32 @@ export class ChatRoomsService {
 
   // 특정 채팅방의 전체 정보 조회
   async findRoomById(roomId: string) {
-    return this.chatRoomsRepository.findOne({
+    const room = await this.chatRoomsRepository.findOne({
       where: { id: roomId },
-      relations: ['participants', 'messages'],
+      relations: ['participants', 'location'],
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        participants: {
+          id: true,
+          name: true
+        }
+      }
     });
+  
+    console.log('[QUERY_RESULT]', {
+      found: !!room,
+      roomData: room ? {
+        id: room.id,
+        name: room.name,
+        participantCount: room.participants?.length
+      } : null
+    });
+  
+    return room;
   }
+  
 
   // 특정 사용자가 참여한 모든 채팅방 ID 조회
   async getChatRoomIdsByUser(userId: string): Promise<string[]> {
@@ -80,7 +101,7 @@ export class ChatRoomsService {
 
   async getAllRooms() {
     // find 옵션에 select 추가하여 필요한 필드만 선택
-    return this.chatRoomsRepository.find({
+    const rooms = await this.chatRoomsRepository.find({
       select: {
         id: true, // ChatRoom의 id
         name: true, // ChatRoom의 name
@@ -101,6 +122,10 @@ export class ChatRoomsService {
         participants: true,
       },
     });
+    return rooms.map(room => ({
+      ...room,
+      participantCount: room.participants?.length || 0,
+    }));
   }
 
   async addUserToChatRoom(userId: string, sido: string) {
@@ -180,12 +205,18 @@ export class ChatRoomsService {
     }
 
     // 참여자 수 조회
-    const participantCount = await this.chatRoomsRepository
+    let participantCount = 0;
+    const result = await this.chatRoomsRepository
       .createQueryBuilder('room')
       .leftJoin('room.participants', 'participant')
       .where('room.id = :roomId', { roomId: room.id })
-      .getCount();
+      .select('COUNT(DISTINCT participant.id)', 'count')
+      .getRawOne();
 
+    if (result) {
+      participantCount = result.count || 0;
+    }
+      
     // 최신 메시지 2개만 선택
     const latestMessages = room.messages.slice(0, 2);
 

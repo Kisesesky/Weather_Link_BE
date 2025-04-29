@@ -1,6 +1,9 @@
 # 1. Node.js LTS 버전 사용
 FROM node:22
 
+# 서버 시간 한국시간으로 바꾸기
+ENV TZ=Asia/Seoul
+
 # 2. 작업 디렉토리 생성 및 이동
 WORKDIR /usr/src/app
 
@@ -31,4 +34,3 @@ RUN chmod +x ./scripts/wait-for-it.sh
 
 # 10. 실행 명령 수정 (상대 경로로)
 CMD ["./scripts/wait-for-it.sh", "database:5433", "--", "sh", "-c", "npm run migration:run && npm run start:prod"]
-# CMD ["sh", "-c", "npm run migration:run && npm run start:prod"]

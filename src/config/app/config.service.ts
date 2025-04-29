@@ -18,7 +18,11 @@ export class AppConfigService {
     return this.configService.get<number>('app.port');
   }
 
-  get frontendUrl() {
-    return this.configService.get<string>('app.frontendUrl')
+  get jwtExpiresIn(): string {
+    return this.configService.get<string>('app.jwtExpiresIn') || '30d';
+  }
+
+  get frontendUrl(): string {
+    return this.configService.get<string>('app.frontendUrl') || '';
   }
 }

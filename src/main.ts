@@ -1,28 +1,50 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import * as basicAuth from 'express-basic-auth';
 import { DbConfigService } from 'src/config/db/config.service';
+import * as cookieParser from 'cookie-parser';
+import { json } from 'express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(DbConfigService);
+  const logger = new Logger('Bootstrap');
+
+  app.use(cookieParser());
+  app.use(json());
 
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true, // 요청 데이터를 DTO 타입으로 변환
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 
-  // CORS 설정
+  // CORS 설정 - 배포용
   app.enableCors({
     origin: [
+      'https://weather-link.site',
+      'https://api.weather-link.site',
       'http://localhost:3000', // 개발용 프론트 주소
+      'http://localhost:8080', // 개발용 프론트 주소
       'https://your-frontend.com', // 배포용 프론트 주소
+      'https://weather-link.vercel.app/',
+      'https://weather-link.vercel.app',
+      'https://www.weather-link.site/',
+      'https://www.weather-link.site'
     ],
     credentials: true,
   });
+
+  // CORS 설정 - 개발용
+  // app.enableCors({
+  //   origin: '*',
+  //   credentials: true,
+  // });
 
   //Swagger 암호화 .env development시 개방형열람, 배포이후 production으로 설정시 암호화열람
   if (configService.nodeEnv !== 'development') {
@@ -58,7 +80,6 @@ async function bootstrap() {
     './src/docs/swagger/swagger-spec.json',
     JSON.stringify(document),
   );
-
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();

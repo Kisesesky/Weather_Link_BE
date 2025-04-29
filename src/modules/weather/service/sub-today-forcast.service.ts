@@ -3,16 +3,17 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";
 import { WeatherConfigService } from "src/config/weather/config.service";
-import { Raw, Repository } from "typeorm";
+import { LessThan, Raw, Repository } from "typeorm";
 import { PrecipitationType, SkyCondition } from "../utils/weather-conditions";
 import { TodayForecastEntity } from '../entities/today-forecast.entity';
+import { Cron } from "@nestjs/schedule";
 import { ForecastTimeSlot } from "../interface/weather-interface";
 import { firstValueFrom } from "rxjs";
 import { RegionEntity } from "src/modules/locations/entities/region.entity";
 
 @Injectable()
-export class TodayForecastService {
-    private readonly logger = new Logger(TodayForecastService.name);
+export class SubTodayForecastService {
+    private readonly logger = new Logger(SubTodayForecastService.name);
     constructor(
         @InjectRepository(TodayForecastEntity)
         private readonly todayForecastRepository: Repository<TodayForecastEntity>,
@@ -22,7 +23,36 @@ export class TodayForecastService {
         private httpService: HttpService,
     ) {}
 
-    async getForecastByRegionName(sido: string, gugun?: string) {
+    @Cron('16 */6 * * *') //6시간마다 데이터 삭제
+    async cleanUpForecast() {
+        const now = new Date();
+        await this.todayForecastRepository.delete({
+          forecastDateTime: LessThan(now),
+        });
+      
+        const all = await this.todayForecastRepository.find({
+          relations: ['region'],
+          order: { forecastDateTime: 'ASC' },
+        });
+      
+        const seen = new Set<string>();
+        const duplicates: string[] = [];
+      
+        for (const forecast of all) {
+          const key = `${forecast.region.id}_${forecast.forecastDateTime.toISOString()}`;
+          if (seen.has(key)) {
+            duplicates.push(forecast.id);
+          } else {
+            seen.add(key);
+          }
+        }
+      
+        if (duplicates.length > 0) {
+          await this.todayForecastRepository.delete(duplicates);
+        }
+      }
+
+    async getSubForecastByRegionName(sido: string, gugun?: string) {
         const region = await this.regionRepository
             .createQueryBuilder('region')
             .where('region.name = :sido', { sido })
@@ -35,25 +65,25 @@ export class TodayForecastService {
             throw new NotFoundException('해당 지역의 날씨 정보를 찾을 수 없습니다.');
         }
 
-        return this.getForecastByRegion(region.nx, region.ny);
+        return this.getSubForecastByRegion(region.nx, region.ny);
     }
 
-    private async getForecastByRegion(nx: number, ny: number): Promise<ForecastTimeSlot[]> {
-        const authKey = this.weatherConfigService.dailyForecastApiKey;
-        const serviceUrl = this.weatherConfigService.dailyForecastApiUrl;
+    private async getSubForecastByRegion(nx: number, ny: number): Promise<ForecastTimeSlot[]> {
+        const serviceUrl = this.weatherConfigService.subTodayForecastApiUrl as string;
+        const authKey = this.weatherConfigService.subTodayForecastApiKey as string;
         const baseDate = moment().format('YYYYMMDD');
         const baseTime = '0500';
 
         try {
-            const url = `${serviceUrl}?pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}&authKey=${authKey}`;
+            const url = `${serviceUrl}serviceKey=${authKey}&pageNo=1&numOfRows=1000&dataType=json&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
             const { data } = await firstValueFrom(this.httpService.get(url));
 
             if (data?.response?.header?.resultCode !== '00') {
+                this.logger.error(`API Error: ${data?.response?.header?.resultMsg}`);
                 throw new Error(data?.response?.header?.resultMsg || 'API 요청 실패');
             }
 
             const forecastItems = data.response?.body?.items?.item ?? [];
-            
             const categories = ['TMP', 'SKY', 'POP', 'PTY', 'REH', 'SNO'];
             const filtered = forecastItems.filter((item) =>
                 categories.includes(item.category)
@@ -113,8 +143,9 @@ export class TodayForecastService {
             throw new Error('날씨 정보를 가져오는데 실패했습니다.');
         }
     }
-
-    async collectAllRegionsWeather() {
+    
+    @Cron('44 5 * * *')  // 매일 05시 10분에 실행
+    async subCollectAllRegionsWeather() {
         try {
             const regions = await this.regionRepository
                 .createQueryBuilder('region')
@@ -122,13 +153,11 @@ export class TodayForecastService {
                 .andWhere('region.ny IS NOT NULL')
                 .getMany();
 
-            this.logger.log(`Starting to collect weather data for ${regions.length} regions`);
-
             // 각 지역별 예보 데이터 수집을 병렬로 처리
             const forecastResults = await Promise.allSettled(
                 regions.map(async region => {
                     try {
-                        const forecasts = await this.getForecastByRegion(region.nx, region.ny);
+                        const forecasts = await this.getSubForecastByRegion(region.nx, region.ny);
                         return {
                             region,
                             forecasts,
@@ -214,7 +243,101 @@ export class TodayForecastService {
         }
     }
 
-    async getForecastDataByRegionName(sido: string, gugun?: string) {
+    async subCollectAllRegionsWeatherOnlyMissing() {
+        try {
+            const existingRegionIds = await this.todayForecastRepository
+                .createQueryBuilder('forecast')
+                .select('forecast.regionId', 'regionId')
+                .groupBy('forecast.regionId')
+                .getRawMany();
+    
+            const existingIds = existingRegionIds.map(row => row.regionId);
+            const queryBuilder = this.regionRepository
+                .createQueryBuilder('region')
+                .where('region.nx IS NOT NULL')
+                .andWhere('region.ny IS NOT NULL');
+    
+            if (existingIds.length > 0) {
+                queryBuilder.andWhere('region.id NOT IN (:...existingIds)', { existingIds });
+            }
+    
+            const regions = await queryBuilder.getMany();
+            const forecastResults = await Promise.allSettled(
+                regions.map(async region => {
+                    try {
+                        const forecasts = await this.getSubForecastByRegion(region.nx, region.ny);
+                        return { region, forecasts, success: true };
+                    } catch (error) {
+                        this.logger.error(`Error collecting weather for region ${region.name}: ${error.message}`);
+                        return { region, success: false, error: error.message };
+                    }
+                })
+            );
+    
+            const successfulForecasts = forecastResults
+                .filter((result): result is PromiseFulfilledResult<{
+                    region: any;
+                    forecasts: any[];
+                    success: true;
+                }> => result.status === 'fulfilled' && result.value.success)
+                .map(result => result.value);
+    
+            const failedRegions = forecastResults
+                .filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success))
+                .map(result => result.status === 'rejected'
+                    ? { region: null, error: result.reason }
+                    : { region: result.value.region, error: result.value.error });
+    
+            if (failedRegions.length > 0) {
+                this.logger.warn(`Failed to collect data for ${failedRegions.length} regions`);
+                failedRegions.forEach(failure => {
+                    const regionName = failure.region ? failure.region.name : 'unknown';
+                    this.logger.warn(`Failed region ${regionName}: ${failure.error}`);
+                });
+            }
+    
+            const forecastEntities: Partial<TodayForecastEntity>[] = [];
+            for (const { region, forecasts } of successfulForecasts) {
+                forecasts.forEach(forecast => {
+                    forecastEntities.push({
+                        region,
+                        forecastDateTime: new Date(forecast.forecastDateTime),
+                        temperature: forecast.temperature,
+                        skyCondition: forecast.skyCondition,
+                        rainProbability: forecast.rainProbability,
+                        precipitationType: forecast.precipitationType,
+                        humidity: forecast.humidity,
+                        snowfall: forecast.snowfall,
+                        collectedAt: new Date()
+                    });
+                });
+            }
+    
+            if (forecastEntities.length > 0) {
+                const chunkSize = 100;
+                for (let i = 0; i < forecastEntities.length; i += chunkSize) {
+                    const chunk = forecastEntities.slice(i, i + chunkSize);
+                    await this.todayForecastRepository.save(chunk);
+                }
+            }
+    
+            const result = {
+                totalRegions: regions.length,
+                successfulRegions: successfulForecasts.length,
+                failedRegions: failedRegions.length,
+                totalForecasts: forecastEntities.length
+            };
+    
+            this.logger.log(`Completed collecting weather data for missing regions: ${JSON.stringify(result)}`);
+            return result;
+    
+        } catch (error) {
+            this.logger.error(`Error in subCollectAllRegionsWeatherOnlyMissing: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async getSubForecastDataByRegionName(sido: string, gugun?: string) {
         const region = await this.regionRepository
             .createQueryBuilder('region')
             .where('region.name = :sido', { sido })
@@ -245,7 +368,7 @@ export class TodayForecastService {
         return forecast;
     }
 
-    async getForecastDataByRegionNameAfterCurrentTime(sido: string, gugun: string) {
+    async getForecastSubDataByRegionNameAfterCurrentTime(sido: string, gugun: string) {
         try {
             // 구군에서 시/군 단위만 추출 (예: "수원시팔달구" -> "수원시")
             const mainGugun = gugun.match(/(.*?[시군구])/)?.[1] || gugun;
@@ -284,9 +407,6 @@ export class TodayForecastService {
                 location: `${sido} ${gugun}`,
                 forecasts: forecasts.map(forecast => ({
                     time: forecast.forecastDateTime.toLocaleTimeString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
