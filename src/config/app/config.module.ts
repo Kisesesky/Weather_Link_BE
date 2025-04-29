@@ -11,12 +11,8 @@ import { AppConfigService } from './config.service';
       validationSchema: Joi.object({
         JWT_SECRET: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),
-        PORT: Joi.number().default(3000),
-        FRONTEND_URL: Joi.string().uri().required(),
-        NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test')
-          .default('development'),
-        JWT_EXPIRES_IN: Joi.string().default('30d'),
+        PORT: Joi.number().required(),
+        FRONTENDURL: Joi.string().required(),
       }),
       isGlobal: true,
     }),
