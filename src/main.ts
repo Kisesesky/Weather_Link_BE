@@ -32,6 +32,7 @@ async function bootstrap() {
       'http://localhost:8080', // 개발용 프론트 주소
       'https://your-frontend.com', // 배포용 프론트 주소
       'https://weather-link.vercel.app/',
+      'https://weather-link.vercel.app',
     ],
     credentials: true,
   });
