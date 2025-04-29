@@ -21,7 +21,6 @@ export class GoogleAuthGuard extends AuthGuard('google') {
     const allowedOrigins = [
       'http://localhost:3000', // 개발용 프론트 경로
       'https://www.weather-link.site', // 배포용 프론트 경로
-      'https://weather-link.site',
       // 필요한 경우 다른 경로 추가
     ];
     if (!origin || !allowedOrigins.includes(origin)) {
