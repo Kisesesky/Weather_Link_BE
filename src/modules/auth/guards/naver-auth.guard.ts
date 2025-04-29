@@ -21,6 +21,7 @@ export class NaverAuthGuard extends AuthGuard('naver') {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://www.weather-link.site',
+      'https://weather-link.site',
     ];
     if (!origin || !allowedOrigins.includes(origin)) {
       console.warn(
