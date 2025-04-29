@@ -20,7 +20,7 @@ export class GoogleAuthGuard extends AuthGuard('google') {
 
     const allowedOrigins = [
       'http://localhost:3000', // 개발용 프론트 경로
-      'https://www.weather-link.site/', // 배포용 프론트 경로
+      'https://www.weather-link.site', // 배포용 프론트 경로
       // 필요한 경우 다른 경로 추가
     ];
     if (!origin || !allowedOrigins.includes(origin)) {
@@ -28,7 +28,7 @@ export class GoogleAuthGuard extends AuthGuard('google') {
         `리다이렉트 주소가 유효하지 않습니다. ${origin}. 기본 주소로 리다이렉트합니다.`,
       );
 
-      origin = 'https://www.weather-link.site/';
+      origin = 'https://www.weather-link.site';
     }
 
     const stateObject = {
