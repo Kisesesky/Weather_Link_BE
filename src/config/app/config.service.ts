@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppConfigService {
-  jwtService: string | Buffer<ArrayBufferLike> | undefined;
+  jwtService: string | Buffer | undefined;
   constructor(private configService: ConfigService) {}
 
   get jwtSecret() {
