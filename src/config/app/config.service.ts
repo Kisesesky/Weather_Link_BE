@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppConfigService {
-  jwtService: string | Buffer<ArrayBufferLike> | undefined;
+  jwtService: string | Buffer | undefined;
   constructor(private configService: ConfigService) {}
 
   get jwtSecret() {
@@ -16,5 +16,9 @@ export class AppConfigService {
 
   get port() {
     return this.configService.get<number>('app.port');
+  }
+
+  get frontendUrl() {
+    return this.configService.get<string>('app.frontendUrl')
   }
 }
