@@ -199,6 +199,7 @@ export class AuthService {
       maxAge,
       secure: true,
       sameSite: 'none',
+      domain: '.weather-link.site',
     };
 
     if (domain !== undefined) {
