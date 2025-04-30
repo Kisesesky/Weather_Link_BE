@@ -169,7 +169,6 @@ export class AuthController {
         res.cookie('Refresh', refreshToken, refreshOptions);
 
         const socialSignupRedirectUrl = `${origin}/sign-up/social`;
-        
         return res.redirect(socialSignupRedirectUrl);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
@@ -223,14 +222,13 @@ export class AuthController {
           this.authService.makeJwtToken(user.email, origin);
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-        
+        const socialSignupRedirectUrl = `${origin}/sign-up/social`;
         return res.redirect(socialSignupRedirectUrl);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
           this.authService.createSocialTemporaryToken(socialProfile, origin);
         res.cookie('Authentication', accessToken, accessOptions);
-        const socialSignupRedirectUrl = `${origin}/sign-up/social`;
         
         return res.redirect(origin);
       } else {
