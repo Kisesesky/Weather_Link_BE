@@ -144,7 +144,7 @@ export class AuthController {
 
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-        
+
         return res.redirect(`${frontendUrl}/signup/social/complete`);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
@@ -322,12 +322,8 @@ export class AuthController {
       res.cookie('Authentication', '', accessOptions);
       res.cookie('Refresh', '', refreshOptions);
 
-      return res.json(
-        new ResponseDto({
-          success: true,
-          message: '로그아웃 완료!',
-        }),
-      );
+      return res.redirect('https://www.weather-link.site/login');
+
     } catch (error) {
       throw new UnauthorizedException({
         statusCode: 401,
