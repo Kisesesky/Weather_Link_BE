@@ -47,6 +47,26 @@ interface SocialProfile {
   registerType: RegisterType;
 }
 
+function decodeState(
+  encodedState: string,
+): { origin: string; nonce: string } | null {
+  if (!encodedState) return null;
+  try {
+    const decodedString = Buffer.from(encodedState, 'base64').toString('utf-8');
+    const stateObject = JSON.parse(decodedString);
+    if (
+      stateObject &&
+      typeof stateObject.origin === 'string' &&
+      typeof stateObject.nonce === 'string'
+    ) {
+      return stateObject;
+    }
+  } catch (error) {
+    console.error('Error decoding state:', error);
+  }
+  return null;
+}
+
 @ApiTags('유저 인증')
 @Controller('auth')
 export class AuthController {
@@ -122,20 +142,23 @@ export class AuthController {
     status: 200,
     description: 'Google 로그인 페이지로 리다이렉트',
   })
-  async googleLogin() {
-    // Guard가 리다이렉트하므로 비워둠
-  }
+  async googleLogin() {}
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   googleCallback(
     @RequestUser() userOrProfile: User | SocialProfile,
-    @RequestOrigin() origin: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
-      const frontendUrl = this.appConfigService.frontendUrl;
-      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+
+      if (!decodedState) {
+        throw new BadRequestException('Invalid state parameter');
+      }
+      const origin = decodedState.origin;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -145,7 +168,7 @@ export class AuthController {
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
 
-        return res.redirect(`${frontendUrl}/signup/social/complete`);
+        return res.redirect(origin);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
@@ -153,17 +176,19 @@ export class AuthController {
 
         res.cookie('Authentication', accessToken, accessOptions);
 
+        const socialSignupRedirectUrl = `${origin}/sign-up/social`;
         return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
     } catch (error) {
       console.error('Google callback error:', error);
-      throw new BadRequestException({
-        statusCode: 400,
-        message: '구글 로그인 처리 중 오류가 발생했습니다.',
-        error: error.message || 'Bad Request',
-      });
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+      const errorRedirectUrl = decodedState
+        ? `${decodedState.origin}/auth/error?provider=google`
+        : '/';
+      res.redirect(errorRedirectUrl);
     }
   }
 
@@ -182,12 +207,15 @@ export class AuthController {
   @UseGuards(KakaoAuthGuard)
   kakaoCallback(
     @RequestUser() userOrProfile: User | SocialProfile,
-    @RequestOrigin() origin: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
-      const frontendUrl = this.appConfigService.frontendUrl;
-      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+      if (!decodedState)
+        throw new BadRequestException('Invalid state parameter');
+      const origin = decodedState.origin;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -195,25 +223,25 @@ export class AuthController {
           this.authService.makeJwtToken(user.email, origin);
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-
-        return res.redirect(`${frontendUrl}/signup/social/complete`);
+        return res.redirect(origin);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
           this.authService.createSocialTemporaryToken(socialProfile, origin);
         res.cookie('Authentication', accessToken, accessOptions);
-
+        const socialSignupRedirectUrl = `${origin}/sign-up/social`;
         return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
     } catch (error) {
       console.error('Kakao callback error:', error);
-      throw new BadRequestException({
-        statusCode: 400,
-        message: '카카오 로그인 처리 중 오류가 발생했습니다.',
-        error: error.message || 'Bad Request',
-      });
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+      const errorRedirectUrl = decodedState
+        ? `${decodedState.origin}/auth/error?provider=kakao`
+        : '/';
+      res.redirect(errorRedirectUrl);
     }
   }
 
@@ -232,12 +260,15 @@ export class AuthController {
   @UseGuards(NaverAuthGuard)
   naverCallback(
     @RequestUser() userOrProfile: User | SocialProfile,
-    @RequestOrigin() origin: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
-      const frontendUrl = this.appConfigService.frontendUrl;
-      const socialSignupRedirectUrl = `${frontendUrl}/sign-up/social`
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+      if (!decodedState)
+        throw new BadRequestException('Invalid state parameter');
+      const origin = decodedState.origin;
 
       if (userOrProfile && 'id' in userOrProfile) {
         const user = userOrProfile;
@@ -245,24 +276,25 @@ export class AuthController {
           this.authService.makeJwtToken(user.email, origin);
         res.cookie('Authentication', accessToken, accessOptions);
         res.cookie('Refresh', refreshToken, refreshOptions);
-        return res.redirect(`${frontendUrl}`);
+        return res.redirect(origin);
       } else if (userOrProfile && 'email' in userOrProfile) {
         const socialProfile = userOrProfile;
         const { accessToken, accessOptions } =
           this.authService.createSocialTemporaryToken(socialProfile, origin);
         res.cookie('Authentication', accessToken, accessOptions);
-
+        const socialSignupRedirectUrl = `${origin}/sign-up/social`;
         return res.redirect(socialSignupRedirectUrl);
       } else {
         throw new Error('유효하지 않은 사용자 또는 프로필 정보입니다.');
       }
     } catch (error) {
       console.error('Naver callback error:', error);
-      throw new BadRequestException({
-        statusCode: 400,
-        message: '네이버 로그인 처리 중 오류가 발생했습니다.',
-        error: error.message || 'Bad Request',
-      });
+      const encodedState = req.query.state as string;
+      const decodedState = decodeState(encodedState);
+      const errorRedirectUrl = decodedState
+        ? `${decodedState.origin}/auth/error?provider=naver`
+        : '/';
+      res.redirect(errorRedirectUrl);
     }
   }
 
@@ -322,8 +354,12 @@ export class AuthController {
       res.cookie('Authentication', '', accessOptions);
       res.cookie('Refresh', '', refreshOptions);
 
-      return res.redirect('https://www.weather-link.site/login');
-
+      return res.json(
+        new ResponseDto({
+          success: true,
+          message: '로그아웃 완료!',
+        }),
+      );
     } catch (error) {
       throw new UnauthorizedException({
         statusCode: 401,
